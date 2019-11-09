@@ -3,7 +3,7 @@
 .data
 mevy:	.asciiz	"Enter vertical velocity:\n"
 mevx:	.asciiz	"Enter horizontal velocity:\n"
-meloe:	.asciiz	"Enter percentage of energy kept after each bounce:\n"
+meloe:	.asciiz	"Enter part of energy kept after each bounce [0,1):\n"
 
 svy:	.space	16
 svx:	.space	16
@@ -42,32 +42,30 @@ main:	li	$v0, 4
 	
 # Convert variables to fixed-point representation
 	la	$a0, svy
-	li	$a1, 0
 	jal	convertBegin
 	addu	$s0, $v0, $zero
 	la	$a0, svx
-	li	$a1, 0
 	jal	convertBegin
 	addu	$s1, $v0, $zero
 	la	$a0, sloe
-	li	$a1, 1
 	jal	convertBegin
 	addu	$s2, $v0, $zero
 	
+	blt	$s2, 0x00000400, loeGood
+	li	$s2, 0x00000300	# 0.75
+loeGood:
 	li	$v0, 10
 	syscall
 	
 	
 # Converts string to fixed-point number, max 3 digits after comma
 # $a0 - address of a string
-# $a1 - 1 if string is a decimal part of a number, else 0
 convertBegin:
 	addu	$t0, $a0, $zero
 	li	$t1, 0		# integral part
 	li	$t9, 10
 	li	$t3, 0		# decimal part
 	li	$t4, 0		# count for reading decimal part (max 3 digits)
-	bnez	$a1, convertReadDecimalPart
 convertInt:
 	lb	$t2, ($t0)
 	beq	$t2, '.', convertShift

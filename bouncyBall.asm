@@ -1,3 +1,5 @@
+# Fixed-point convention: 22+10 -> accuracy of 0.001 (1/1024)
+
 .data
 mevy:	.asciiz	"Enter vertical velocity:\n"
 mevx:	.asciiz	"Enter horizontal velocity:\n"
@@ -15,7 +17,7 @@ hstop:	.word	0x00000020	# program will stop if max height of the ball is less th
 .text
 .globl main
 
-# handle input of 3 variables
+# Handle input of 3 variables
 main:	li	$v0, 4
 	la	$a0, mevy
 	syscall
@@ -38,10 +40,34 @@ main:	li	$v0, 4
 	li	$a1, 16
 	syscall
 	
-	la	$t0, svy
+# Convert variables to fixed-point representation
+	la	$a0, svy
+	li	$a1, 0
+	jal	convertBegin
+	addu	$s0, $v0, $zero
+	la	$a0, svx
+	li	$a1, 0
+	jal	convertBegin
+	addu	$s1, $v0, $zero
+	la	$a0, sloe
+	li	$a1, 1
+	jal	convertBegin
+	addu	$s2, $v0, $zero
+	
+	li	$v0, 10
+	syscall
+	
+	
+# Converts string to fixed-point number, max 3 digits after comma
+# $a0 - address of a string
+# $a1 - 1 if string is a decimal part of a number, else 0
 convertBegin:
-	li	$t1, 0
+	addu	$t0, $a0, $zero
+	li	$t1, 0		# integral part
 	li	$t9, 10
+	li	$t3, 0		# decimal part
+	li	$t4, 0		# count for reading decimal part (max 3 digits)
+	bnez	$a1, convertReadDecimalPart
 convertInt:
 	lb	$t2, ($t0)
 	beq	$t2, '.', convertShift
@@ -55,8 +81,6 @@ convertInt:
 convertShift:
 	sll	$t1, $t1, 10
 	bne	$t2, '.', convertEnd
-	li	$t3, 0
-	li	$t4, 0
 convertReadDecimalPart:
 	addiu	$t4, $t4, 1
 	addiu	$t0, $t0, 1
@@ -83,4 +107,5 @@ convertDecimalPartSkip:
 	srl	$t8, $t8, 1
 	bnez	$t8, convertDecimalPart
 convertEnd:
-	addu	$s0, $t1, $zero
+	addu	$v0, $t1, $zero
+	jr	$ra

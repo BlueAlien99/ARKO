@@ -71,12 +71,13 @@ loeGood:
 	
 # Calculate hmax = pow(vmax, 2)/(2*g)
 	lw	$t0, gconst
-	sll	$t0, $t0, 11
+	sll	$t0, $t0, 1
 	addu	$t1, $s7, $zero
 	sll	$t1, $t1, 10
 	divu	$t1, $t1, $t0
 	multu	$t1, $s7
-	mflo	$s6
+	mflo	$t1
+	srl	$s6, $t1, 10
 	
 # Start of the main loop
 loopStart:
@@ -86,12 +87,15 @@ loopStart:
 	lw	$t0, dt
 	multu	$t0, $s1
 	mflo	$t1
+	srl	$t1, $t1, 10
 	addu	$s5, $s5, $t1				# s = s + vx*dt;
 	lw	$t1, gconst
 	multu	$t0, $s0
-	mflo	$t2					# double x = vy*dt;
+	mflo	$t2
+	srl	$t2, $t2, 10				# double x = vy*dt;
 	multu	$t1, $t0
-	mflo	$t3					# double y = g*dt;
+	mflo	$t3
+	srl	$t3, $t3, 10				# double y = g*dt;
 	beqz	$t8, posVY				# if(negvy){
 	blt	$t2, $s4, stillFreefall				# if(x >= h){
 	li	$s3, 0							# freefall = 0;
@@ -126,12 +130,14 @@ noFreefall:					# else{
 	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
 	lw	$t0, gconst
-	sll	$t0, $t0, 11
+	sll	$t0, $t0, 1
 	addu	$t1, $s7, $zero
 	sll	$t1, $t1, 10
 	divu	$t1, $t1, $t0
 	multu	$t1, $s7
-	mflo	$s6					# hmax = pow(vmax, 2)/(2*g);
+	mflo	$t1
+	srl	$s6, $t1, 10				# hmax = pow(vmax, 2)/(2*g);
+
 printCoordinates:				# }
 	li	$v0, 1
 	addu	$a0, $s4, $zero

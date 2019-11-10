@@ -192,17 +192,23 @@ convertShift:
 	sll	$t1, $t1, 12
 	bne	$t2, '.', convertEnd
 convertReadDecimalPart:
-	addiu	$t4, $t4, 1
 	addiu	$t0, $t0, 1
 	lb	$t2, ($t0)
 	blt	$t2, '0', convertDecimalPartMultu
-	bgt	$t4, 3, convertDecimalPartMultu
 	multu	$t3, $t9
 	mflo	$t3
 	subiu	$t2, $t2, '0'
 	addu	$t3, $t3, $t2
-	b	convertReadDecimalPart
+	addiu	$t4, $t4, 1
+	blt	$t4, 3, convertReadDecimalPart
 convertDecimalPartMultu:
+	bge	$t4, 3, convertSkipMultu
+	multu	$t3, $t9
+	mflo	$t3
+	bge	$t4, 2, convertSkipMultu
+	multu	$t3, $t9
+	mflo	$t3
+convertSkipMultu:
 	li	$t8, 1000
 	multu	$t3, $t8
 	mflo	$t3

@@ -149,6 +149,12 @@ printCoordinates:				# }
 	addu	$a0, $s5, $zero
 	syscall					# cout<<s;
 	li	$v0, 11
+	addiu	$a0, $zero, ' '
+	syscall					# cout<<' ';
+	li	$v0, 1
+	addu	$a0, $s0, $zero
+	syscall					# cout<<vy;
+	li	$v0, 11
 	addiu	$a0, $zero, '\n'
 	syscall					# cout<<'\n';
 	b	loopStart		# }

@@ -1,4 +1,4 @@
-# Fixed-point convention: 22+10 -> accuracy of 0.001 (1/1024)
+# Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
 
 .data
 #filenm	.asciiz	"./mips_data.txt"
@@ -10,10 +10,10 @@ svy:	.space	16
 svx:	.space	16
 sloe:	.space	16
 
-gconst:	.word	0x00002740	# gravitational acceleration == 9.8125
-dt:	.word	0x00000001	# time step
-tau:	.word	0x00000080	# defines how long the ball is touching ground during bounce == 125 ms
-hstop:	.word	0x00000020	# program will stop if max height of the ball is less than ~~ 3 cm
+gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
+dt:	.word	0x00000004	# time step
+tau:	.word	0x00000200	# defines how long the ball is touching ground during bounce == 125 ms
+hstop:	.word	0x00000080	# program will stop if max height of the ball is less than ~~ 3 cm
 
 .text
 .globl main
@@ -52,8 +52,8 @@ main:	li	$v0, 4
 	jal	convertBegin
 	addu	$s2, $v0, $zero
 	
-	blt	$s2, 0x00000400, loeGood
-	li	$s2, 0x00000300	# 0.75
+	blt	$s2, 0x00001000, loeGood
+	li	$s2, 0x00000c00	# 0.75
 loeGood:
 #	li	$v0, 13
 #	la	$a0, filenm
@@ -73,11 +73,11 @@ loeGood:
 	lw	$t0, gconst
 	sll	$t0, $t0, 1
 	addu	$t1, $s7, $zero
-	sll	$t1, $t1, 10
+	sll	$t1, $t1, 12
 	divu	$t1, $t1, $t0
 	multu	$t1, $s7
 	mflo	$t1
-	srl	$s6, $t1, 10
+	srl	$s6, $t1, 12
 	
 # Start of the main loop
 loopStart:
@@ -87,15 +87,15 @@ loopStart:
 	lw	$t0, dt
 	multu	$t0, $s1
 	mflo	$t1
-	srl	$t1, $t1, 10
+	srl	$t1, $t1, 12
 	addu	$s5, $s5, $t1				# s = s + vx*dt;
 	lw	$t1, gconst
 	multu	$t0, $s0
 	mflo	$t2
-	srl	$t2, $t2, 10				# double x = vy*dt;
+	srl	$t2, $t2, 12				# double x = vy*dt;
 	multu	$t1, $t0
 	mflo	$t3
-	srl	$t3, $t3, 10				# double y = g*dt;
+	srl	$t3, $t3, 12				# double y = g*dt;
 	beqz	$t8, posVY				# if(negvy){
 	blt	$t2, $s4, stillFreefall				# if(x >= h){
 	li	$s3, 0							# freefall = 0;
@@ -121,22 +121,22 @@ noFreefall:					# else{
 	lw	$t0, tau
 	multu	$s1, $t0
 	mflo	$t0
-	srl	$t0, $t0, 10
+	srl	$t0, $t0, 12
 	addu	$s5, $s5, $t0				# s = s + vx*tau;
 	multu	$s7, $s2
 	mflo	$t0
-	srl	$s7, $t0, 10				# vmax = vmax*rho;
+	srl	$s7, $t0, 12				# vmax = vmax*rho;
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
 	lw	$t0, gconst
 	sll	$t0, $t0, 1
 	addu	$t1, $s7, $zero
-	sll	$t1, $t1, 10
+	sll	$t1, $t1, 12
 	divu	$t1, $t1, $t0
 	multu	$t1, $s7
 	mflo	$t1
-	srl	$s6, $t1, 10				# hmax = pow(vmax, 2)/(2*g);
+	srl	$s6, $t1, 12				# hmax = pow(vmax, 2)/(2*g);
 
 printCoordinates:				# }
 	li	$v0, 1
@@ -188,7 +188,7 @@ convertInt:
 	addiu	$t0, $t0, 1
 	b	convertInt
 convertShift:
-	sll	$t1, $t1, 10
+	sll	$t1, $t1, 12
 	bne	$t2, '.', convertEnd
 convertReadDecimalPart:
 	addiu	$t4, $t4, 1
@@ -206,7 +206,7 @@ convertDecimalPartMultu:
 	multu	$t3, $t8
 	mflo	$t3
 	li	$t9, 500000
-	li	$t8, 0x00000200
+	li	$t8, 0x00000800
 convertDecimalPart:
 	blt	$t3, $t9, convertDecimalPartSkip
 	addu	$t1, $t1, $t8

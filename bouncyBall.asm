@@ -83,6 +83,26 @@ loeGood:
 loopStart:
 	lw	$t0, hstop
 	ble	$s6, $t0, loopEnd	# while(hmax > hstop){
+# ---- ---- Print coordinates ---- ----
+	li	$v0, 1
+	addu	$a0, $s4, $zero
+	syscall					# cout<<h;
+	li	$v0, 11
+	addiu	$a0, $zero, ' '
+	syscall					# cout<<' ';
+	li	$v0, 1
+	addu	$a0, $s5, $zero
+	syscall					# cout<<s;
+#	li	$v0, 11
+#	addiu	$a0, $zero, ' '
+#	syscall					# cout<<' ';
+#	li	$v0, 1
+#	addu	$a0, $s0, $zero
+#	syscall					# cout<<vy;
+	li	$v0, 11
+	addiu	$a0, $zero, '\n'
+	syscall					# cout<<'\n';
+# ---- ---- Print coordinates ---- ----
 	beqz	$s3, noFreefall			# if(freefall){
 	lw	$t0, dt
 	multu	$t0, $s1
@@ -105,16 +125,16 @@ stillFreefall:							# else{
 	subu	$s4, $s4, $t2						# h = h-x;
 newNegVY:							# }
 	addu	$s0, $s0, $t3					# vy = vy+y;
-	b	printCoordinates			# }
+	b	loopContinue				# }
 posVY:							# else{
 	addu	$s4, $s4, $t2					# h = h+x;
 	bge	$t3, $s0, chgVYsgn				# if(y < vy){
 	subu	$s0, $s0, $t3						# vy = vy-y;
-	b	printCoordinates				# }
+	b	loopContinue					# }
 chgVYsgn:							# else{
 	li	$s0, 0							# vy = 0;
 	li	$t8, 1							# negvy = true;
-	b	printCoordinates				# }
+	b	loopContinue					# }
 							# }
 						# }
 noFreefall:					# else{
@@ -137,26 +157,7 @@ noFreefall:					# else{
 	multu	$t1, $s7
 	mflo	$t1
 	srl	$s6, $t1, 12				# hmax = pow(vmax, 2)/(2*g);
-
-printCoordinates:				# }
-	li	$v0, 1
-	addu	$a0, $s4, $zero
-	syscall					# cout<<h;
-	li	$v0, 11
-	addiu	$a0, $zero, ' '
-	syscall					# cout<<' ';
-	li	$v0, 1
-	addu	$a0, $s5, $zero
-	syscall					# cout<<s;
-	li	$v0, 11
-	addiu	$a0, $zero, ' '
-	syscall					# cout<<' ';
-	li	$v0, 1
-	addu	$a0, $s0, $zero
-	syscall					# cout<<vy;
-	li	$v0, 11
-	addiu	$a0, $zero, '\n'
-	syscall					# cout<<'\n';
+loopContinue:					# }
 	b	loopStart		# }
 
 
@@ -167,8 +168,8 @@ loopEnd:
 #	syscall
 	li	$v0, 10
 	syscall
-	
-	
+
+
 # Converts string to fixed-point number, max 3 digits after comma
 # $a0 - address of a string
 convertBegin:

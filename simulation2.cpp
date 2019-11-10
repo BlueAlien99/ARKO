@@ -21,7 +21,7 @@ int main(){
 	double h = 0;
 	double hmax = pow(vy, 2)/(2*g);
 	double tau = 0.1;
-	double hstop = 0.01;
+	double hstop = 0.03;
 	double vmax = vy;
 	bool freefall = true;
 	bool negvy = false;
@@ -29,6 +29,7 @@ int main(){
 	ofstream outfile("data.txt");
 
 	while(hmax > hstop){
+		outfile<<h<<" "<<s<<endl;
 		if(freefall){
 			s = s + vx*dt;
 			double x = vy*dt;
@@ -62,7 +63,6 @@ int main(){
 			freefall = true;
 			hmax = pow(vmax, 2)/(2*g);
 		}
-		outfile<<h<<" "<<s<<endl;
 	}
 	cout<<"Stopped at "<<hmax;
 

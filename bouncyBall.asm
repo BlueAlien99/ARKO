@@ -1,6 +1,7 @@
 # Fixed-point convention: 22+10 -> accuracy of 0.001 (1/1024)
 
 .data
+#filenm	.asciiz	"./mips_data.txt"
 mevy:	.asciiz	"Enter vertical velocity:\n"
 mevx:	.asciiz	"Enter horizontal velocity:\n"
 meloe:	.asciiz	"Enter part of energy kept after each bounce [0,1):\n"
@@ -54,6 +55,66 @@ main:	li	$v0, 4
 	blt	$s2, 0x00000400, loeGood
 	li	$s2, 0x00000300	# 0.75
 loeGood:
+#	li	$v0, 13
+#	la	$a0, filenm
+#	li	$a1, 1
+#	li	$a2, 0
+#	syscall
+#	addu	$s0, $v0, $zero
+	
+	li	$s3, 0	# t
+	li	$s4, 0	# h
+	li	$s5, 0	# s
+	li	$s6, 0	# hmax, calculated below
+	addu	$s7, $s0, $zero	# vmax
+	li	$t8, 1 # bool freefall
+	
+# Calculate hmax = pow(vmax, 2)/(2*g)
+	lw	$t0, gconst
+	sll	$t0, $t0, 11
+	addu	$t1, $s7, $zero
+	sll	$t1, $t1, 10
+	divu	$t1, $t1, $t0
+	multu	$t1, $s7
+	mflo	$s6
+	
+# Start of the main loop
+
+	lw	$t0, hstop
+	ble	$s6, $t0, loopEnd	# while(hmax > hstop){
+	beqz	$t8, noFreefall			# if(freefall){
+	
+	
+	
+noFreefall:				# else{
+	lw	$t0, tau
+	addu	$s3, $s3, $t0			# t = t + tau;
+	multu	$s1, $t0
+	mflo	$t0
+	srl	$t0, $t0, 10
+	addu	$s5, $s5, $t0			# s = s + vx*tau;
+	multu	$s7, $s2
+	mflo	$t0
+	srl	$s7, $t0, 10			# vmax = vmax*rho;
+	addu	$s0, $s7, $zero			# vy = vmax;
+	li	$t8, 1				# freefall = true;
+	lw	$t0, gconst
+	sll	$t0, $t0, 11
+	addu	$t1, $s7, $zero
+	sll	$t1, $t1, 10
+	divu	$t1, $t1, $t0
+	multu	$t1, $s7
+	mflo	$s6				# hmax = pow(vmax, 2)/(2*g);
+printCoordinates:			# }
+
+	
+
+
+
+loopEnd:
+#	li	$v0, 16
+#	addu	$a0, $s0
+#	syscall
 	li	$v0, 10
 	syscall
 	

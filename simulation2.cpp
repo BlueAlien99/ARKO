@@ -1,0 +1,70 @@
+#include <iostream>
+#include <fstream>
+#include <cmath>
+
+using namespace std;
+
+int main(){
+	double vx, vy;
+	double rho;
+
+	cout<<"\nvy: ";
+	cin>>vy;
+	cout<<"\nvx: ";
+	cin>>vx;
+	cout<<"\nrho: ";
+	cin>>rho;
+
+	double g = 9.81;
+	double dt = 0.001;
+	double s = 0;
+	double h = 0;
+	double hmax = pow(vy, 2)/(2*g);
+	double tau = 0.1;
+	double hstop = 0.01;
+	double vmax = vy;
+	bool freefall = true;
+	bool negvy = false;
+
+	ofstream outfile("data.txt");
+
+	while(hmax > hstop){
+		if(freefall){
+			s = s + vx*dt;
+			double x = vy*dt;
+			double y = g*dt;
+			if(negvy){
+				if(x >= h){
+					freefall = 0;
+					h = 0;
+				}
+				else{
+					h = h-x;
+				}
+				vy = vy+y;
+			}
+			else{
+				h = h+x;
+				if(y < vy){
+					vy = vy-y;
+				}
+				else{
+					vy = 0;
+					negvy = true;
+				}
+			}
+		}
+		else{
+			s = s + vx*tau;
+			vmax = vmax*rho;
+			vy = vmax;
+			negvy = false;
+			freefall = true;
+			hmax = pow(vmax, 2)/(2*g);
+		}
+		outfile<<h<<" "<<s<<endl;
+	}
+	cout<<"Stopped at "<<hmax;
+
+	outfile.close();
+}

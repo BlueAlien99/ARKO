@@ -67,6 +67,7 @@ loeGood:
 	li	$s5, 0	# s
 	li	$s6, 0	# hmax, calculated below
 	addu	$s7, $s0, $zero	# vmax
+	li	$t8, 0	# bool negvy
 	
 # Calculate hmax = pow(vmax, 2)/(2*g)
 	lw	$t0, gconst
@@ -82,9 +83,36 @@ loopStart:
 	lw	$t0, hstop
 	ble	$s6, $t0, loopEnd	# while(hmax > hstop){
 	beqz	$s3, noFreefall			# if(freefall){
-	
-	
-	
+	lw	$t0, dt
+	multu	$t0, $s1
+	mflo	$t1
+	addu	$s5, $s5, $t1				# s = s + vx*dt;
+	lw	$t1, gconst
+	multu	$t0, $s0
+	mflo	$t2					# double x = vy*dt;
+	multu	$t1, $t0
+	mflo	$t3					# double y = g*dt;
+	beqz	$t8, posVY				# if(negvy){
+	blt	$t2, $s4, stillFreefall				# if(x >= h){
+	li	$s3, 0							# freefall = 0;
+	li	$s4, 0							# h = 0;
+	b	newNegVY					# }
+stillFreefall:							# else{
+	subu	$s4, $s4, $t2						# h = h-x;
+newNegVY:							# }
+	addu	$s0, $s0, $t3					# vy = vy+y;
+	b	printCoordinates			# }
+posVY:							# else{
+	addu	$s4, $s4, $t2					# h = h+x;
+	bge	$t3, $s0, chgVYsgn				# if(y < vy){
+	subu	$s0, $s0, $t3						# vy = vy-y;
+	b	printCoordinates				# }
+chgVYsgn:							# else{
+	li	$s0, 0							# vy = 0;
+	li	$t8, 1							# negvy = true;
+	b	printCoordinates				# }
+							# }
+						# }
 noFreefall:					# else{
 	lw	$t0, tau
 	multu	$s1, $t0
@@ -95,6 +123,7 @@ noFreefall:					# else{
 	mflo	$t0
 	srl	$s7, $t0, 10				# vmax = vmax*rho;
 	addu	$s0, $s7, $zero				# vy = vmax;
+	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
 	lw	$t0, gconst
 	sll	$t0, $t0, 11

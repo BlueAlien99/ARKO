@@ -16,7 +16,6 @@ int main(){
 	cin>>rho;
 
 	double g = 9.81;
-	double t = 0;
 	double dt = 0.001;
 	double s = 0;
 	double h = 0;
@@ -32,7 +31,6 @@ int main(){
 		if(freefall){
 			double hnew = h + vy*dt;
 			s = s + vx*dt;
-			t = t + dt;
 			if(hnew < 0){
 				freefall = false;
 				h = 0;
@@ -44,7 +42,6 @@ int main(){
 		}
 		else{
 			s = s + vx*tau;
-			t = t + tau;
 			vmax = vmax*rho;
 			vy = vmax;
 			freefall = true;

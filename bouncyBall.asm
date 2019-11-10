@@ -62,12 +62,11 @@ loeGood:
 #	syscall
 #	addu	$s0, $v0, $zero
 	
-	li	$s3, 0	# t
+	li	$s3, 1	# bool freefall
 	li	$s4, 0	# h
 	li	$s5, 0	# s
 	li	$s6, 0	# hmax, calculated below
 	addu	$s7, $s0, $zero	# vmax
-	li	$t8, 1 # bool freefall
 	
 # Calculate hmax = pow(vmax, 2)/(2*g)
 	lw	$t0, gconst
@@ -79,35 +78,45 @@ loeGood:
 	mflo	$s6
 	
 # Start of the main loop
-
+loopStart:
 	lw	$t0, hstop
 	ble	$s6, $t0, loopEnd	# while(hmax > hstop){
-	beqz	$t8, noFreefall			# if(freefall){
+	beqz	$s3, noFreefall			# if(freefall){
 	
 	
 	
-noFreefall:				# else{
+noFreefall:					# else{
 	lw	$t0, tau
-	addu	$s3, $s3, $t0			# t = t + tau;
 	multu	$s1, $t0
 	mflo	$t0
 	srl	$t0, $t0, 10
-	addu	$s5, $s5, $t0			# s = s + vx*tau;
+	addu	$s5, $s5, $t0				# s = s + vx*tau;
 	multu	$s7, $s2
 	mflo	$t0
-	srl	$s7, $t0, 10			# vmax = vmax*rho;
-	addu	$s0, $s7, $zero			# vy = vmax;
-	li	$t8, 1				# freefall = true;
+	srl	$s7, $t0, 10				# vmax = vmax*rho;
+	addu	$s0, $s7, $zero				# vy = vmax;
+	li	$s3, 1					# freefall = true;
 	lw	$t0, gconst
 	sll	$t0, $t0, 11
 	addu	$t1, $s7, $zero
 	sll	$t1, $t1, 10
 	divu	$t1, $t1, $t0
 	multu	$t1, $s7
-	mflo	$s6				# hmax = pow(vmax, 2)/(2*g);
-printCoordinates:			# }
-
-	
+	mflo	$s6					# hmax = pow(vmax, 2)/(2*g);
+printCoordinates:				# }
+	li	$v0, 1
+	addu	$a0, $s4, $zero
+	syscall					# cout<<h;
+	li	$v0, 11
+	addiu	$a0, ' '
+	syscall					# cout<<' ';
+	li	$v0, 1
+	addu	$a0, $s5, $zero
+	syscall					# cout<<s;
+	li	$v0, 11
+	addiu	$a0, '\n'
+	syscall					# cout<<'\n';
+	b	loopStart		# }
 
 
 

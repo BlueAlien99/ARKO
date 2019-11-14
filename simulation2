@@ -29,7 +29,7 @@ int main(){
 	ofstream outfile("data.txt");
 
 	while(hmax > hstop){
-		outfile<<h<<" "<<s<<endl;
+		outfile<<s<<" "<<h<<endl;
 		if(freefall){
 			s = s + vx*dt;
 			double x = vy*dt;

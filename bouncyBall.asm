@@ -1,3 +1,6 @@
+# TODO: U2 representation
+# TODO: Fixed-point accuracy
+
 # Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
 
 .data
@@ -13,6 +16,10 @@ sloe:	.space	16
 gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
 dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
 tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
+
+color:	.byte	0x19
+	.byte	0x76
+	.byte	0xd2
 
 .text
 .globl main
@@ -67,25 +74,22 @@ loeGood:
 	li	$s6, 0	# i
 	addu	$s7, $s0, $zero	# vmax
 	li	$t8, 0	# bool negvy
+	
+	li	$v0, 9
+	li	$a0, 8192
+	syscall
+	addu	$t9, $v0, $zero
 
 # Start of the main loop
 loopStart:
 	bge	$s6, 1024, loopEnd	# while(i < 1024){
+	
+	sw	$s5, ($t9)
+	addiu	$t9, $t9, 4
+	sw	$s4, ($t9)
+	addiu	$t9, $t9, 4
+	
 	addiu	$s6, $s6, 1			# ++i;
-# ---- ---- Print coordinates ---- ----
-	li	$v0, 1
-	addu	$a0, $s5, $zero
-	syscall					# cout<<s;
-	li	$v0, 11
-	addiu	$a0, $zero, ' '
-	syscall					# cout<<' ';
-	li	$v0, 1
-	addu	$a0, $s4, $zero
-	syscall					# cout<<h;
-	li	$v0, 11
-	addiu	$a0, $zero, '\n'
-	syscall					# cout<<'\n';
-# ---- ---- Print coordinates ---- ----
 	beqz	$s3, noFreefall			# if(freefall){
 	lw	$t0, dt
 	multu	$t0, $s1
@@ -137,7 +141,32 @@ loopContinue:					# }
 # TODO: branch after jump
 
 
+# ---- ---- Print coordinates ---- ----
 loopEnd:
+	subiu	$t9, $t9, 8192
+	li	$s6, 0
+cntPrnt:
+	bge	$s6, 1024, endEnd	# while(i < 1024)
+	addiu	$s6, $s6, 1
+	li	$v0, 1
+	lw	$a0, ($t9)
+	addiu	$t9, $t9, 4
+	syscall					# cout<<s;
+	li	$v0, 11
+	addiu	$a0, $zero, ' '
+	syscall					# cout<<' ';
+	li	$v0, 1
+	lw	$a0, ($t9)
+	addiu	$t9, $t9, 4
+	syscall					# cout<<h;
+	li	$v0, 11
+	addiu	$a0, $zero, '\n'
+	syscall					# cout<<'\n';
+	b	cntPrnt
+# ---- ---- Print coordinates ---- ----
+
+
+endEnd:
 #	li	$v0, 16
 #	addu	$a0, $s0
 #	syscall

@@ -11,8 +11,9 @@ svx:	.space	16
 sloe:	.space	16
 
 gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
-dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
-tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
+dt:	.word	0x00000004	# time step
+tau:	.word	0x00000200	# defines how long the ball is touching ground during bounce == 125 ms
+hstop:	.word	0x00000080	# program will stop if max height of the ball is less than ~~ 3 cm
 
 .text
 .globl main
@@ -64,14 +65,24 @@ loeGood:
 	li	$s3, 1	# bool freefall
 	li	$s4, 0	# h
 	li	$s5, 0	# s
-	li	$s6, 0	# i
+	li	$s6, 0	# hmax, calculated below
 	addu	$s7, $s0, $zero	# vmax
 	li	$t8, 0	# bool negvy
-
+	
+# Calculate hmax = pow(vmax, 2)/(2*g)
+	lw	$t0, gconst
+	sll	$t0, $t0, 1
+	addu	$t1, $s7, $zero
+	sll	$t1, $t1, 12
+	divu	$t1, $t1, $t0
+	multu	$t1, $s7
+	mflo	$t1
+	srl	$s6, $t1, 12
+	
 # Start of the main loop
 loopStart:
-	bge	$s6, 1024, loopEnd	# while(i < 1024){
-	addiu	$s6, $s6, 1			# ++i;
+	lw	$t0, hstop
+	ble	$s6, $t0, loopEnd	# while(hmax > hstop){
 # ---- ---- Print coordinates ---- ----
 	li	$v0, 1
 	addu	$a0, $s5, $zero
@@ -82,6 +93,12 @@ loopStart:
 	li	$v0, 1
 	addu	$a0, $s4, $zero
 	syscall					# cout<<h;
+#	li	$v0, 11
+#	addiu	$a0, $zero, ' '
+#	syscall					# cout<<' ';
+#	li	$v0, 1
+#	addu	$a0, $s0, $zero
+#	syscall					# cout<<vy;
 	li	$v0, 11
 	addiu	$a0, $zero, '\n'
 	syscall					# cout<<'\n';
@@ -132,9 +149,17 @@ noFreefall:					# else{
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
+	lw	$t0, gconst
+	sll	$t0, $t0, 1
+	addu	$t1, $s7, $zero
+	sll	$t1, $t1, 12
+	divu	$t1, $t1, $t0
+	multu	$t1, $s7
+	mflo	$t1
+	srl	$s6, $t1, 12				# hmax = pow(vmax, 2)/(2*g);
 loopContinue:					# }
 	b	loopStart		# }
-# TODO: branch after jump
+
 
 
 loopEnd:

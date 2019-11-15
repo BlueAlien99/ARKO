@@ -4,7 +4,9 @@
 # Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
 
 .data
-#filenm	.asciiz	"./mips_data.txt"
+filei:	.asciiz	"./bitmap.bmp"
+fileo:	.asciiz	"./output.bmp"
+
 mevy:	.asciiz	"Enter vertical velocity:\n"
 mevx:	.asciiz	"Enter horizontal velocity:\n"
 meloe:	.asciiz	"Enter part of energy kept after each bounce [0,1):\n"
@@ -61,13 +63,6 @@ main:	li	$v0, 4
 	blt	$s2, 0x00001000, loeGood
 	li	$s2, 0x00000c00	# 0.75
 loeGood:
-#	li	$v0, 13
-#	la	$a0, filenm
-#	li	$a1, 1
-#	li	$a2, 0
-#	syscall
-#	addu	$s0, $v0, $zero
-	
 	li	$s3, 1	# bool freefall
 	li	$s4, 0	# h
 	li	$s5, 0	# s
@@ -139,10 +134,79 @@ noFreefall:					# else{
 loopContinue:					# }
 	b	loopStart		# }
 # TODO: branch after jump
+loopEnd:
 
+# Open input bitmap
+	li	$v0, 13
+	la	$a0, filei
+	li	$a1, 0
+	li	$a2, 0
+	syscall
+	addu	$s0, $v0, $zero
+	
+# Open output bitmap
+	li	$v0, 13
+	la	$a0, fileo
+	li	$a1, 1
+	li	$a2, 0
+	syscall
+	addu	$s1, $v0, $zero
+
+# Allocate heap for bmp header
+	li	$v0, 9
+	li	$a0, 54
+	syscall
+	addu	$t8, $v0, $zero
+	
+# Load bmp header
+	li	$v0, 14
+	addu	$a0, $s0, $zero
+	addu	$a1, $t8, $zero
+	li	$a2, 54
+	syscall
+	
+# Write bmp header
+	li	$v0, 15
+	addu	$a0, $s1, $zero
+	addu	$a1, $t8, $zero
+	li	$a2, 54
+	syscall
+	
+# Get size of bmp
+	li	$t0, 5
+	li	$s2, 0
+getSize:
+	blt	$t0, 2, knownSize
+	sll	$s2, $s2, 8
+	addu	$t2, $t8, $t0
+	lb	$t1, ($t2)
+	addu	$s2, $s2, $t1
+	subiu	$t0, $t0, 1
+	b	getSize
+knownSize:
+	subiu	$s2, $s2, 54
+	
+# Allocate heap for pixel array
+	li	$v0, 9
+	addu	$a0, $s2, $zero
+	syscall
+	addu	$s3, $v0, $zero
+	
+# Load pixel array
+	li	$v0, 14
+	addu	$a0, $s0, $zero
+	addu	$a1, $s3, $zero
+	addu	$a2, $s2, $zero
+	syscall
+	
+# $s0 - input bmp descriptor
+# $s1 - output bmp descriptor
+# $s2 - size of pixel array
+# $s3 - heap address of pixel array
+# $t8 - heap address of bmp header
+# $t9 - heap address of ball data
 
 # ---- ---- Print coordinates ---- ----
-loopEnd:
 	subiu	$t9, $t9, 8192
 	li	$s6, 0
 cntPrnt:
@@ -165,11 +229,22 @@ cntPrnt:
 	b	cntPrnt
 # ---- ---- Print coordinates ---- ----
 
-
 endEnd:
-#	li	$v0, 16
-#	addu	$a0, $s0
-#	syscall
+
+# Write pixel array
+	li	$v0, 15
+	addu	$a0, $s1, $zero
+	addu	$a1, $s3, $zero
+	addu	$a2, $s2, $zero
+	syscall
+
+# Close files and exit
+	li	$v0, 16
+	addu	$a0, $s0, $zero
+	syscall
+	li	$v0, 16
+	addu	$a0, $s1, $zero
+	syscall
 	li	$v0, 10
 	syscall
 

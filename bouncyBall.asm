@@ -224,9 +224,31 @@ getHeight:
 	subiu	$t0, $t0, 1
 	b	getHeight
 knownHeight:
+
+# Get (0, 0) address
+	srl	$t0, $s4, 4
+	srl	$t1, $s5, 4
+	addu	$s6, $s3, $zero
+	divu	$s7, $s2, $s5
+	li	$t2, 3
+	multu	$t0, $t2
+	mflo	$t2
+	addu	$s6, $s6, $t2
+	multu	$t1, $s7
+	mflo	$t2
+	addu	$s6, $s6, $t2
+	
+	
+	li	$t0, 0
+	#addiu	$t1, $s6, 1
+	#addiu	$t2, $s6, 2
+	sb	$t0, 0($s6)
+	sb	$t0, 1($s6)
+	
 	
 # TODO: branches at the end of each loop
 # TODO: load byte unsigned
+# TODO: Get size, width and height - similar
 	
 # $s0 - input bmp descriptor
 # $s1 - output bmp descriptor
@@ -235,6 +257,7 @@ knownHeight:
 # $s4 - width in pixels
 # $s5 - height in pixels
 # $s6 - (0, 0) point
+# $s7 - bytes per row
 # $t8 - heap address of bmp header
 # $t9 - heap address of ball data
 

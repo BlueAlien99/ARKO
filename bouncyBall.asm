@@ -179,7 +179,7 @@ getSize:
 	blt	$t0, 2, knownSize
 	sll	$s2, $s2, 8
 	addu	$t2, $t8, $t0
-	lb	$t1, ($t2)
+	lbu	$t1, ($t2)
 	addu	$s2, $s2, $t1
 	subiu	$t0, $t0, 1
 	b	getSize
@@ -199,10 +199,42 @@ knownSize:
 	addu	$a2, $s2, $zero
 	syscall
 	
+# Get width
+	li	$t0, 21
+	li	$s4, 0
+getWidth:
+	blt	$t0, 18, knownWidth
+	sll	$s4, $s4, 8
+	addu	$t2, $t8, $t0
+	lbu	$t1, ($t2)
+	addu	$s4, $s4, $t1
+	subiu	$t0, $t0, 1
+	b	getWidth
+knownWidth:
+
+# Get height
+	li	$t0, 25
+	li	$s5, 0
+getHeight:
+	blt	$t0, 22, knownHeight
+	sll	$s5, $s5, 8
+	addu	$t2, $t8, $t0
+	lbu	$t1, ($t2)
+	addu	$s5, $s5, $t1
+	subiu	$t0, $t0, 1
+	b	getHeight
+knownHeight:
+	
+# TODO: branches at the end of each loop
+# TODO: load byte unsigned
+	
 # $s0 - input bmp descriptor
 # $s1 - output bmp descriptor
 # $s2 - size of pixel array
 # $s3 - heap address of pixel array
+# $s4 - width in pixels
+# $s5 - height in pixels
+# $s6 - (0, 0) point
 # $t8 - heap address of bmp header
 # $t9 - heap address of ball data
 

@@ -312,8 +312,12 @@ cntDraw:
 	lw	$t1, ($t9)		# $t1 - ball's h
 	addiu	$t9, $t9, 4
 	
-	bgt	$t0, 64, cntDraw	# continue if out of graphing area
-	bgt	$t1, 8, cntDraw
+	li	$t3, 64			# continue if out of graphing area
+	sll	$t3, $t3, 12
+	bgt	$t0, $t3, cntDraw
+	li	$t3, 8
+	sll	$t3, $t3, 12
+	bgt	$t1, $t3, cntDraw
 	
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6

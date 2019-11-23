@@ -4,7 +4,7 @@
 # Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
 
 .data
-filei:	.asciiz	"./bitmap.bmp"
+filei:	.asciiz	"./bitmap360.bmp"
 fileo:	.asciiz	"./output.bmp"
 
 mevy:	.asciiz	"Enter vertical velocity:\n"
@@ -19,9 +19,9 @@ gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
 dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
 tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
 
-color:	.byte	0x19
+color:	.byte	0xd2
 	.byte	0x76
-	.byte	0xd2
+	.byte	0x19
 
 .text
 .globl main
@@ -200,6 +200,7 @@ knownSize:
 	syscall
 	
 # Get width
+# $s4 - width in pixels
 	li	$t0, 21
 	li	$s4, 0
 getWidth:
@@ -213,6 +214,7 @@ getWidth:
 knownWidth:
 
 # Get height
+# $s5 - height in pixels
 	li	$t0, 25
 	li	$s5, 0
 getHeight:
@@ -230,6 +232,10 @@ knownHeight:
 	srl	$t1, $s5, 4
 	addu	$s6, $s3, $zero
 	divu	$s7, $s2, $s5
+	# $s4 and $s5 - width and height of graphing area
+	subu	$s4, $s4, $t0
+	subu	$s5, $s5, $t1
+	# 
 	li	$t2, 3
 	multu	$t0, $t2
 	mflo	$t2
@@ -238,13 +244,12 @@ knownHeight:
 	mflo	$t2
 	addu	$s6, $s6, $t2
 	
-	
-	li	$t0, 0
-	#addiu	$t1, $s6, 1
-	#addiu	$t2, $s6, 2
-	sb	$t0, 0($s6)
-	sb	$t0, 1($s6)
-	
+	# color (0, 0) in red
+	#li	$t0, 0
+	##addiu	$t1, $s6, 1
+	##addiu	$t2, $s6, 2
+	#sb	$t0, 0($s6)
+	#sb	$t0, 1($s6)
 	
 # TODO: branches at the end of each loop
 # TODO: load byte unsigned
@@ -254,19 +259,26 @@ knownHeight:
 # $s1 - output bmp descriptor
 # $s2 - size of pixel array
 # $s3 - heap address of pixel array
-# $s4 - width in pixels
-# $s5 - height in pixels
+# $s4 - width of graphing area in pixels
+# $s5 - height of graphing area in pixels
 # $s6 - (0, 0) point
 # $s7 - bytes per row
 # $t8 - heap address of bmp header
 # $t9 - heap address of ball data
 
+# Get pixels per meter
+# $t6 - width ppm
+# $t7 - height ppm
+	srl	$t6, $s4, 6
+	srl	$t7, $s5, 3
+
+# TODO: printing not needed in release
 # ---- ---- Print coordinates ---- ----
 	subiu	$t9, $t9, 8192
-	li	$s6, 0
+	li	$t5, 0
 cntPrnt:
-	bge	$s6, 1024, endEnd	# while(i < 1024)
-	addiu	$s6, $s6, 1
+	bge	$t5, 1024, draw		# while(i < 1024)
+	addiu	$t5, $t5, 1
 	li	$v0, 1
 	lw	$a0, ($t9)
 	addiu	$t9, $t9, 4
@@ -283,6 +295,54 @@ cntPrnt:
 	syscall					# cout<<'\n';
 	b	cntPrnt
 # ---- ---- Print coordinates ---- ----
+
+
+
+draw:
+
+# ---- ---- Draw on bitmap ---- ----
+	subiu	$t9, $t9, 8192
+	li	$t5, 0
+	li	$t2, 3
+cntDraw:
+	bge	$t5, 1024, endEnd	# while(i < 1024)
+	addiu	$t5, $t5, 1
+	lw	$t0, ($t9)		# $t0 - ball's s
+	addiu	$t9, $t9, 4
+	lw	$t1, ($t9)		# $t1 - ball's h
+	addiu	$t9, $t9, 4
+	
+	bgt	$t0, 64, cntDraw	# continue if out of graphing area
+	bgt	$t1, 8, cntDraw
+	
+	# $t0 and $t1 are now num of pixels relative to (0, 0)
+	multu	$t0, $t6
+	mflo	$t0
+	srl	$t0, $t0, 12
+	multu	$t1, $t7
+	mflo	$t1
+	srl	$t1, $t1, 12
+	
+	# $t0 - num of bytes from (0, 0) - width
+	multu	$t0, $t2
+	mflo	$t0
+	
+	# $t1 - num of bytes from (0, 0) - height
+	multu	$t1, $s7
+	mflo	$t1
+	
+	# $t3 - pixel to color
+	addu	$t3, $s6, $t0
+	addu	$t3, $t3, $t1
+	
+	# Draw
+	li	$t4, 0
+	sb	$t4, 1($t3)
+	
+	b	cntDraw
+# ---- ---- Draw on bitmap ---- ----
+
+
 
 endEnd:
 

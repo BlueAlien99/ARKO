@@ -19,9 +19,9 @@ gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
 dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
 tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
 
-color:	.byte	0xd2
-	.byte	0x76
-	.byte	0x19
+colorB:	.byte	0xd2
+colorG:	.byte	0x76
+colorR:	.byte	0x19
 
 .text
 .globl main
@@ -266,11 +266,13 @@ knownHeight:
 # $t8 - heap address of bmp header
 # $t9 - heap address of ball data
 
-# Get pixels per meter
+# Get pixels per meter -> 26+6
 # $t6 - width ppm
 # $t7 - height ppm
-	srl	$t6, $s4, 6
-	srl	$t7, $s5, 3
+	addu	$t6, $s4, $zero
+	sll	$t7, $s5, 3
+	#srl	$t6, $s4, 6
+	#srl	$t7, $s5, 3
 
 # TODO: printing not needed in release
 # ---- ---- Print coordinates ---- ----
@@ -322,10 +324,10 @@ cntDraw:
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6
 	mflo	$t0
-	srl	$t0, $t0, 12
+	srl	$t0, $t0, 18
 	multu	$t1, $t7
 	mflo	$t1
-	srl	$t1, $t1, 12
+	srl	$t1, $t1, 18
 	
 	# $t0 - num of bytes from (0, 0) - width
 	multu	$t0, $t2
@@ -340,14 +342,19 @@ cntDraw:
 	addu	$t3, $t3, $t1
 	
 	# Draw
-	li	$t4, 0
+	lb	$t4, colorB
+	sb	$t4, 0($t3)
+	lb	$t4, colorG
 	sb	$t4, 1($t3)
+	lb	$t4, colorR
+	sb	$t4, 2($t3)
 	
 	b	cntDraw
 # ---- ---- Draw on bitmap ---- ----
+# TODO: x pixels and a half
 
 
-
+# TODO: comments and whitespaces
 endEnd:
 
 # Write pixel array

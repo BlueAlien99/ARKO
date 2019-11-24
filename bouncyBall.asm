@@ -1,4 +1,3 @@
-# TODO: U2 representation
 # TODO: Fixed-point accuracy
 
 # Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
@@ -68,7 +67,6 @@ loeGood:
 	li	$s5, 0	# s
 	li	$s6, 0	# i
 	addu	$s7, $s0, $zero	# vmax
-	li	$t8, 0	# bool negvy
 	
 	li	$v0, 9
 	li	$a0, 8192
@@ -90,33 +88,18 @@ loopCnt:				# do{
 	srl	$t1, $t1, 12
 	addu	$s5, $s5, $t1				# s = s + vx*dt;
 	lw	$t1, gconst
-	multu	$t0, $s0
-	mflo	$t2
-	srl	$t2, $t2, 12				# double x = vy*dt;
+	mul	$t2, $t0, $s0
+	sra	$t2, $t2, 12				# double x = vy*dt;
 	multu	$t1, $t0
 	mflo	$t3
 	srl	$t3, $t3, 12				# double y = g*dt;
-	beqz	$t8, posVY				# if(negvy){
-	blt	$t2, $s4, stillFreefall				# if(x >= h){
-	li	$s3, 0							# freefall = 0;
-	li	$s4, 0							# h = 0;
-	b	newNegVY					# }
-stillFreefall:							# else{
-	subu	$s4, $s4, $t2						# h = h-x;
-newNegVY:							# }
-	addu	$s0, $s0, $t3					# vy = vy+y;
-	b	loopCntIf				# }
-posVY:							# else{
-	addu	$s4, $s4, $t2					# h = h+x;
-	bge	$t3, $s0, chgVYsgn				# if(y < vy){
-	subu	$s0, $s0, $t3						# vy = vy-y;
-	b	loopCntIf					# }
-chgVYsgn:							# else{
-	li	$s0, 0							# vy = 0;
-	li	$t8, 1							# negvy = true;
-	b	loopCntIf					# }
+	add	$s4, $s4, $t2				# h = h+x;
+	sub	$s0, $s0, $t3				# vy = vy-y;
+	bgt	$s4, 0, loopCntIf			# if(h <= 0){
+	li	$s3, 0						# freefall = 0;
+	li	$s4, 0						# h = 0;
 							# }
-						# }
+	b	loopCntIf			# }
 noFreefall:					# else{
 	lw	$t0, tau
 	multu	$s1, $t0
@@ -127,7 +110,6 @@ noFreefall:					# else{
 	mflo	$t0
 	srl	$s7, $t0, 12				# vmax = vmax*rho;
 	addu	$s0, $s7, $zero				# vy = vmax;
-	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
 loopCntIf:					# }
 	blt	$s6, 1024, loopCnt	# } while(i < 1024);
@@ -274,10 +256,10 @@ cntDraw:
 	
 	li	$t3, 64			# continue if out of graphing area
 	sll	$t3, $t3, 12
-	bgt	$t0, $t3, cntDrawIf
+	bge	$t0, $t3, cntDrawIf
 	li	$t3, 8
 	sll	$t3, $t3, 12
-	bgt	$t1, $t3, cntDrawIf
+	bge	$t1, $t3, cntDrawIf
 	
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6

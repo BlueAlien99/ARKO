@@ -1,11 +1,9 @@
 # TODO: U2 representation
 # TODO: Fixed-point accuracy
-# TODO: branch after jump
 # TODO: branches at the end of each loop
-# TODO: load byte unsigned
-# TODO: Get size, width and height - similar
 # TODO: printing not needed in release
 # TODO: x pixels and a half
 # TODO: comments and whitespaces
 
 todo: other requirements
+todo: files and .gitignore

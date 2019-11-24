@@ -107,16 +107,16 @@ stillFreefall:							# else{
 	subu	$s4, $s4, $t2						# h = h-x;
 newNegVY:							# }
 	addu	$s0, $s0, $t3					# vy = vy+y;
-	b	loopContinue				# }
+	b	loopStart				# }
 posVY:							# else{
 	addu	$s4, $s4, $t2					# h = h+x;
 	bge	$t3, $s0, chgVYsgn				# if(y < vy){
 	subu	$s0, $s0, $t3						# vy = vy-y;
-	b	loopContinue					# }
+	b	loopStart					# }
 chgVYsgn:							# else{
 	li	$s0, 0							# vy = 0;
 	li	$t8, 1							# negvy = true;
-	b	loopContinue					# }
+	b	loopStart					# }
 							# }
 						# }
 noFreefall:					# else{
@@ -131,9 +131,8 @@ noFreefall:					# else{
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
-loopContinue:					# }
+						# }
 	b	loopStart		# }
-# TODO: branch after jump
 loopEnd:
 
 # Open input bitmap
@@ -172,19 +171,10 @@ loopEnd:
 	li	$a2, 54
 	syscall
 	
-# Get size of bmp
-	li	$t0, 5
-	li	$s2, 0
-getSize:
-	blt	$t0, 2, knownSize
-	sll	$s2, $s2, 8
-	addu	$t2, $t8, $t0
-	lbu	$t1, ($t2)
-	addu	$s2, $s2, $t1
-	subiu	$t0, $t0, 1
-	b	getSize
-knownSize:
-	subiu	$s2, $s2, 54
+# Get size of pixel array
+	addiu	$a0, $t8, 5
+	jal	get4bytes
+	subiu	$s2, $v0, 54
 	
 # Allocate heap for pixel array
 	li	$v0, 9
@@ -201,32 +191,16 @@ knownSize:
 	
 # Get width
 # $s4 - width in pixels
-	li	$t0, 21
-	li	$s4, 0
-getWidth:
-	blt	$t0, 18, knownWidth
-	sll	$s4, $s4, 8
-	addu	$t2, $t8, $t0
-	lbu	$t1, ($t2)
-	addu	$s4, $s4, $t1
-	subiu	$t0, $t0, 1
-	b	getWidth
-knownWidth:
+	addiu	$a0, $t8, 21
+	jal	get4bytes
+	addu	$s4, $v0, $zero
 
 # Get height
 # $s5 - height in pixels
-	li	$t0, 25
-	li	$s5, 0
-getHeight:
-	blt	$t0, 22, knownHeight
-	sll	$s5, $s5, 8
-	addu	$t2, $t8, $t0
-	lbu	$t1, ($t2)
-	addu	$s5, $s5, $t1
-	subiu	$t0, $t0, 1
-	b	getHeight
-knownHeight:
-
+	addiu	$a0, $t8, 25
+	jal	get4bytes
+	addu	$s5, $v0, $zero
+	
 # Get (0, 0) address
 	srl	$t0, $s4, 4
 	srl	$t1, $s5, 4
@@ -244,16 +218,9 @@ knownHeight:
 	mflo	$t2
 	addu	$s6, $s6, $t2
 	
-	# color (0, 0) in red
-	#li	$t0, 0
-	##addiu	$t1, $s6, 1
-	##addiu	$t2, $s6, 2
-	#sb	$t0, 0($s6)
-	#sb	$t0, 1($s6)
+	
 	
 # TODO: branches at the end of each loop
-# TODO: load byte unsigned
-# TODO: Get size, width and height - similar
 	
 # $s0 - input bmp descriptor
 # $s1 - output bmp descriptor
@@ -342,11 +309,11 @@ cntDraw:
 	addu	$t3, $t3, $t1
 	
 	# Draw
-	lb	$t4, colorB
+	lbu	$t4, colorB
 	sb	$t4, 0($t3)
-	lb	$t4, colorG
+	lbu	$t4, colorG
 	sb	$t4, 1($t3)
-	lb	$t4, colorR
+	lbu	$t4, colorR
 	sb	$t4, 2($t3)
 	
 	b	cntDraw
@@ -384,7 +351,7 @@ convertBegin:
 	li	$t3, 0		# decimal part
 	li	$t4, 0		# count for reading decimal part (max 3 digits)
 convertInt:
-	lb	$t2, ($t0)
+	lbu	$t2, ($t0)
 	beq	$t2, '.', convertShift
 	blt	$t2, '0', convertShift
 	multu	$t1, $t9
@@ -398,7 +365,7 @@ convertShift:
 	bne	$t2, '.', convertEnd
 convertReadDecimalPart:
 	addiu	$t0, $t0, 1
-	lb	$t2, ($t0)
+	lbu	$t2, ($t0)
 	blt	$t2, '0', convertDecimalPartMultu
 	multu	$t3, $t9
 	mflo	$t3
@@ -429,4 +396,21 @@ convertDecimalPartSkip:
 	bnez	$t8, convertDecimalPart
 convertEnd:
 	addu	$v0, $t1, $zero
+	jr	$ra
+
+
+# Converts 4 bytes from LittleEndian to BigEndian
+# $a0 - location of last byte
+get4bytes:
+	li	$v0, 0
+	li	$a1, 4
+getNextByte:
+	beqz	$a1, convSucc
+	sll	$v0, $v0, 8
+	lbu	$a2, ($a0)
+	addu	$v0, $v0, $a2
+	subiu	$a0, $a0, 1
+	subiu	$a1, $a1, 1
+	b	getNextByte
+convSucc:
 	jr	$ra

@@ -264,10 +264,17 @@ cntDraw:
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6
 	mflo	$t0
-	srl	$t0, $t0, 18
+	andi	$t3, $t0, 0x00020000
+	beqz	$t3, sroX
+	addiu	$t0, $t0, 0x00040000
+sroX:	srl	$t0, $t0, 18
+
 	multu	$t1, $t7
 	mflo	$t1
-	srl	$t1, $t1, 18
+	andi	$t3, $t1, 0x00020000
+	beqz	$t3, sroY
+	addiu	$t1, $t1, 0x00040000
+sroY:	srl	$t1, $t1, 18
 	
 	# $t0 - num of bytes from (0, 0) - width
 	multu	$t0, $t2
@@ -292,7 +299,6 @@ cntDraw:
 cntDrawIf:
 	blt	$t5, 1024, cntDraw	# while(i < 1024)
 # ---- ---- Draw on bitmap ---- ----
-# TODO: x pixels and a half
 
 
 # TODO: comments and whitespaces

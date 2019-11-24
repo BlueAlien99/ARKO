@@ -1,5 +1,4 @@
 # TODO: Fixed-point accuracy
-# TODO: x pixels and a half
 # TODO: comments and whitespaces
 
 todo: other requirements

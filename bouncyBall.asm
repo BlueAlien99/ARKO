@@ -19,9 +19,9 @@ gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
 dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
 tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
 
-colorB:	.byte	0xd2
-colorG:	.byte	0x76
 colorR:	.byte	0x19
+colorG:	.byte	0x76
+colorB:	.byte	0xd2
 
 .text
 .globl main
@@ -76,9 +76,7 @@ loeGood:
 	addu	$t9, $v0, $zero
 
 # Start of the main loop
-loopStart:
-	bge	$s6, 1024, loopEnd	# while(i < 1024){
-	
+loopCnt:				# do{
 	sw	$s5, ($t9)
 	addiu	$t9, $t9, 4
 	sw	$s4, ($t9)
@@ -107,16 +105,16 @@ stillFreefall:							# else{
 	subu	$s4, $s4, $t2						# h = h-x;
 newNegVY:							# }
 	addu	$s0, $s0, $t3					# vy = vy+y;
-	b	loopStart				# }
+	b	loopCntIf				# }
 posVY:							# else{
 	addu	$s4, $s4, $t2					# h = h+x;
 	bge	$t3, $s0, chgVYsgn				# if(y < vy){
 	subu	$s0, $s0, $t3						# vy = vy-y;
-	b	loopStart					# }
+	b	loopCntIf					# }
 chgVYsgn:							# else{
 	li	$s0, 0							# vy = 0;
 	li	$t8, 1							# negvy = true;
-	b	loopStart					# }
+	b	loopCntIf					# }
 							# }
 						# }
 noFreefall:					# else{
@@ -131,9 +129,9 @@ noFreefall:					# else{
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$t8, 0					# negvy = false;
 	li	$s3, 1					# freefall = true;
-						# }
-	b	loopStart		# }
-loopEnd:
+loopCntIf:					# }
+	blt	$s6, 1024, loopCnt	# } while(i < 1024);
+
 
 # Open input bitmap
 	li	$v0, 13
@@ -220,8 +218,6 @@ loopEnd:
 	
 	
 	
-# TODO: branches at the end of each loop
-	
 # $s0 - input bmp descriptor
 # $s1 - output bmp descriptor
 # $s2 - size of pixel array
@@ -238,15 +234,13 @@ loopEnd:
 # $t7 - height ppm
 	addu	$t6, $s4, $zero
 	sll	$t7, $s5, 3
-	#srl	$t6, $s4, 6
-	#srl	$t7, $s5, 3
 
-# TODO: printing not needed in release
+
+	b	skipPrinting
 # ---- ---- Print coordinates ---- ----
 	subiu	$t9, $t9, 8192
 	li	$t5, 0
 cntPrnt:
-	bge	$t5, 1024, draw		# while(i < 1024)
 	addiu	$t5, $t5, 1
 	li	$v0, 1
 	lw	$a0, ($t9)
@@ -262,19 +256,16 @@ cntPrnt:
 	li	$v0, 11
 	addiu	$a0, $zero, '\n'
 	syscall					# cout<<'\n';
-	b	cntPrnt
+	blt	$t5, 1024, cntPrnt	# while(i < 1024)
 # ---- ---- Print coordinates ---- ----
+skipPrinting:
 
-
-
-draw:
 
 # ---- ---- Draw on bitmap ---- ----
 	subiu	$t9, $t9, 8192
 	li	$t5, 0
 	li	$t2, 3
 cntDraw:
-	bge	$t5, 1024, endEnd	# while(i < 1024)
 	addiu	$t5, $t5, 1
 	lw	$t0, ($t9)		# $t0 - ball's s
 	addiu	$t9, $t9, 4
@@ -283,10 +274,10 @@ cntDraw:
 	
 	li	$t3, 64			# continue if out of graphing area
 	sll	$t3, $t3, 12
-	bgt	$t0, $t3, cntDraw
+	bgt	$t0, $t3, cntDrawIf
 	li	$t3, 8
 	sll	$t3, $t3, 12
-	bgt	$t1, $t3, cntDraw
+	bgt	$t1, $t3, cntDrawIf
 	
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6
@@ -316,13 +307,13 @@ cntDraw:
 	lbu	$t4, colorR
 	sb	$t4, 2($t3)
 	
-	b	cntDraw
+cntDrawIf:
+	blt	$t5, 1024, cntDraw	# while(i < 1024)
 # ---- ---- Draw on bitmap ---- ----
 # TODO: x pixels and a half
 
 
 # TODO: comments and whitespaces
-endEnd:
 
 # Write pixel array
 	li	$v0, 15
@@ -352,7 +343,6 @@ convertBegin:
 	li	$t4, 0		# count for reading decimal part (max 3 digits)
 convertInt:
 	lbu	$t2, ($t0)
-	beq	$t2, '.', convertShift
 	blt	$t2, '0', convertShift
 	multu	$t1, $t9
 	mflo	$t1
@@ -405,12 +395,10 @@ get4bytes:
 	li	$v0, 0
 	li	$a1, 4
 getNextByte:
-	beqz	$a1, convSucc
 	sll	$v0, $v0, 8
 	lbu	$a2, ($a0)
 	addu	$v0, $v0, $a2
 	subiu	$a0, $a0, 1
 	subiu	$a1, $a1, 1
-	b	getNextByte
-convSucc:
+	bnez	$a1, getNextByte
 	jr	$ra

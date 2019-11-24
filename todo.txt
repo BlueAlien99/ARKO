@@ -1,7 +1,5 @@
 # TODO: U2 representation
 # TODO: Fixed-point accuracy
-# TODO: branches at the end of each loop
-# TODO: printing not needed in release
 # TODO: x pixels and a half
 # TODO: comments and whitespaces
 

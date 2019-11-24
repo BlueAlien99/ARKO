@@ -1,22 +1,20 @@
 # TODO: Fixed-point accuracy
 
-# Fixed-point convention: 20+12 -> accuracy of 0.000244 (1/4096)
-
 .data
 filei:	.asciiz	"./bitmap360.bmp"
 fileo:	.asciiz	"./output.bmp"
 
-mevy:	.asciiz	"Enter vertical velocity:\n"
-mevx:	.asciiz	"Enter horizontal velocity:\n"
-meloe:	.asciiz	"Enter part of energy kept after each bounce [0,1):\n"
+mevy:	.asciiz	"Enter vertical velocity [0, 16):\n"				# (5+27)
+mevx:	.asciiz	"Enter horizontal velocity [0, 16):\n"				# (4+28)
+meloe:	.asciiz	"Enter part of energy kept after each bounce [0, 1):\n"		# (1+31)
 
 svy:	.space	16
 svx:	.space	16
 sloe:	.space	16
 
-gconst:	.word	0x00009d00	# gravitational acceleration == 9.8125
-dt:	.word	0x00000020	# time step == 0.0078125 (1/128) s
-tau:	.word	0x00000100	# defines how long the ball is touching ground during bounce == 62.5 ms
+gconst:	.word	0x9ce809d4	# gravitational acceleration == 9.80665 (4+28)
+dt:	.word	0x01000000	# time step == 0.0078125 (1/128) s (1+31)
+tau:	.word	0x08000000	# defines how long the ball is touching ground during bounce == 62.5 ms (1+31)
 
 colorR:	.byte	0x19
 colorG:	.byte	0x76
@@ -51,22 +49,24 @@ main:	li	$v0, 4
 # Convert variables to fixed-point representation
 	la	$a0, svy
 	jal	convertBegin
-	addu	$s0, $v0, $zero
+	srl	$s0, $v0, 1
 	la	$a0, svx
 	jal	convertBegin
 	addu	$s1, $v0, $zero
 	la	$a0, sloe
 	jal	convertBegin
-	addu	$s2, $v0, $zero
+	sll	$s2, $v0, 3
 	
-	blt	$s2, 0x00001000, loeGood
-	li	$s2, 0x00000c00	# 0.75
+	bltu	$s2, 0x80000000, loeGood
+	li	$s2, 0x60000000	# 0.75
 loeGood:
 	li	$s3, 1	# bool freefall
-	li	$s4, 0	# h
-	li	$s5, 0	# s
+	li	$s4, 0	# h (6+26)
+	li	$s5, 0	# s (8+24)
 	li	$s6, 0	# i
-	addu	$s7, $s0, $zero	# vmax
+	addu	$s7, $s0, $zero	# vmax (4+28)
+	
+	
 	
 	li	$v0, 9
 	li	$a0, 8192
@@ -84,15 +84,14 @@ loopCnt:				# do{
 	beqz	$s3, noFreefall			# if(freefall){
 	lw	$t0, dt
 	multu	$t0, $s1
-	mflo	$t1
-	srl	$t1, $t1, 12
+	mfhi	$t1
+	srl	$t1, $t1, 3
 	addu	$s5, $s5, $t1				# s = s + vx*dt;
 	lw	$t1, gconst
 	mul	$t2, $t0, $s0
-	sra	$t2, $t2, 12				# double x = vy*dt;
+	mfhi	$t2					# double x = vy*dt;
 	multu	$t1, $t0
-	mflo	$t3
-	srl	$t3, $t3, 12				# double y = g*dt;
+	mfhi	$t3					# double y = g*dt;
 	add	$s4, $s4, $t2				# h = h+x;
 	sub	$s0, $s0, $t3				# vy = vy-y;
 	bgt	$s4, 0, loopCntIf			# if(h <= 0){
@@ -103,12 +102,12 @@ loopCnt:				# do{
 noFreefall:					# else{
 	lw	$t0, tau
 	multu	$s1, $t0
-	mflo	$t0
-	srl	$t0, $t0, 12
+	mfhi	$t0
+	srl	$t0, $t0, 3
 	addu	$s5, $s5, $t0				# s = s + vx*tau;
 	multu	$s7, $s2
-	mflo	$t0
-	srl	$s7, $t0, 12				# vmax = vmax*rho;
+	mfhi	$t0
+	sll	$s7, $t0, 1				# vmax = vmax*rho;
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$s3, 1					# freefall = true;
 loopCntIf:					# }
@@ -211,11 +210,11 @@ loopCntIf:					# }
 # $t8 - heap address of bmp header
 # $t9 - heap address of ball data
 
-# Get pixels per meter -> 26+6
-# $t6 - width ppm
-# $t7 - height ppm
-	addu	$t6, $s4, $zero
-	sll	$t7, $s5, 3
+# Get pixels per meter
+# $t6 - width ppm (5+27)
+# $t7 - height ppm (8+24)
+	sll	$t6, $s4, 21
+	sll	$t7, $s5, 21
 
 
 	b	skipPrinting
@@ -255,25 +254,25 @@ cntDraw:
 	addiu	$t9, $t9, 4
 	
 	li	$t3, 64			# continue if out of graphing area
-	sll	$t3, $t3, 12
+	sll	$t3, $t3, 24
 	bge	$t0, $t3, cntDrawIf
 	li	$t3, 8
-	sll	$t3, $t3, 12
+	sll	$t3, $t3, 26
 	bge	$t1, $t3, cntDrawIf
 	
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6
-	mflo	$t0
-	andi	$t3, $t0, 0x00020000
+	mfhi	$t0
+	andi	$t3, $t0, 0x00040000
 	beqz	$t3, sroX
-	addiu	$t0, $t0, 0x00040000
-sroX:	srl	$t0, $t0, 18
+#	addiu	$t0, $t0, 0x00080000
+sroX:	srl	$t0, $t0, 19
 
 	multu	$t1, $t7
-	mflo	$t1
+	mfhi	$t1
 	andi	$t3, $t1, 0x00020000
 	beqz	$t3, sroY
-	addiu	$t1, $t1, 0x00040000
+#	addiu	$t1, $t1, 0x00040000
 sroY:	srl	$t1, $t1, 18
 	
 	# $t0 - num of bytes from (0, 0) - width
@@ -339,7 +338,7 @@ convertInt:
 	addiu	$t0, $t0, 1
 	b	convertInt
 convertShift:
-	sll	$t1, $t1, 12
+	sll	$t1, $t1, 28
 	bne	$t2, '.', convertEnd
 convertReadDecimalPart:
 	addiu	$t0, $t0, 1
@@ -359,11 +358,11 @@ convertDecimalPartMultu:
 	multu	$t3, $t9
 	mflo	$t3
 convertSkipMultu:
-	li	$t8, 1000
+	li	$t8, 1000000
 	multu	$t3, $t8
 	mflo	$t3
-	li	$t9, 500000
-	li	$t8, 0x00000800
+	li	$t9, 500000000
+	li	$t8, 0x08000000
 convertDecimalPart:
 	blt	$t3, $t9, convertDecimalPartSkip
 	addu	$t1, $t1, $t8

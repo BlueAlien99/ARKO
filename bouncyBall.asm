@@ -66,7 +66,10 @@ loeGood:
 	li	$s6, 0	# i
 	addu	$s7, $s0, $zero	# vmax (4+28)
 	
-	
+	lw	$t0, dt
+	lw	$t1, gconst
+	multu	$t1, $t0
+	mfhi	$t3			# double y = g*dt;
 	
 	li	$v0, 9
 	li	$a0, 8192
@@ -82,16 +85,12 @@ loopCnt:				# do{
 	
 	addiu	$s6, $s6, 1			# ++i;
 	beqz	$s3, noFreefall			# if(freefall){
-	lw	$t0, dt
 	multu	$t0, $s1
-	mfhi	$t1
-	srl	$t1, $t1, 3
-	addu	$s5, $s5, $t1				# s = s + vx*dt;
-	lw	$t1, gconst
+	mfhi	$t2
+	srl	$t2, $t2, 3
+	addu	$s5, $s5, $t2				# s = s + vx*dt;
 	mul	$t2, $t0, $s0
 	mfhi	$t2					# double x = vy*dt;
-	multu	$t1, $t0
-	mfhi	$t3					# double y = g*dt;
 	add	$s4, $s4, $t2				# h = h+x;
 	sub	$s0, $s0, $t3				# vy = vy-y;
 	bgt	$s4, 0, loopCntIf			# if(h <= 0){
@@ -100,14 +99,14 @@ loopCnt:				# do{
 							# }
 	b	loopCntIf			# }
 noFreefall:					# else{
-	lw	$t0, tau
-	multu	$s1, $t0
-	mfhi	$t0
-	srl	$t0, $t0, 3
-	addu	$s5, $s5, $t0				# s = s + vx*tau;
+	lw	$t2, tau
+	multu	$s1, $t2
+	mfhi	$t2
+	srl	$t2, $t2, 3
+	addu	$s5, $s5, $t2				# s = s + vx*tau;
 	multu	$s7, $s2
-	mfhi	$t0
-	sll	$s7, $t0, 1				# vmax = vmax*rho;
+	mfhi	$t2
+	sll	$s7, $t2, 1				# vmax = vmax*rho;
 	addu	$s0, $s7, $zero				# vy = vmax;
 	li	$s3, 1					# freefall = true;
 loopCntIf:					# }

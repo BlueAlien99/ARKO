@@ -1,5 +1,5 @@
 .data
-filei:	.asciiz	"./bitmap360.bmp"
+filei:	.asciiz	"./bmps/bitmap360.bmp"
 fileo:	.asciiz	"./output.bmp"
 
 mevy:	.asciiz	"Enter vertical velocity [0, 16):\n"				# (5+27)
@@ -197,7 +197,6 @@ loopCntIf:					# }
 	addu	$s6, $s6, $t2
 	
 	
-	
 # $s0 - input bmp descriptor
 # $s1 - output bmp descriptor
 # $s2 - size of pixel array
@@ -298,8 +297,6 @@ cntDrawIf:
 	blt	$t5, 1024, cntDraw	# while(i < 1024)
 # ---- ---- Draw on bitmap ---- ----
 
-
-# TODO: comments and whitespaces
 
 endEnd:
 

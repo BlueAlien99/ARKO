@@ -1,4 +1,0 @@
-# TODO: comments and whitespaces
-
-todo: other requirements
-todo: files and .gitignore

@@ -1,5 +1,3 @@
-# TODO: Fixed-point accuracy
-
 .data
 filei:	.asciiz	"./bitmap360.bmp"
 fileo:	.asciiz	"./output.bmp"
@@ -186,7 +184,9 @@ loopCntIf:					# }
 	divu	$s7, $s2, $s5
 	# $s4 and $s5 - width and height of graphing area
 	subu	$s4, $s4, $t0
+	subiu	$s4, $s4, 1
 	subu	$s5, $s5, $t1
+	subiu	$s5, $s5, 1
 	# 
 	li	$t2, 3
 	multu	$t0, $t2
@@ -254,24 +254,24 @@ cntDraw:
 	
 	li	$t3, 64			# continue if out of graphing area
 	sll	$t3, $t3, 24
-	bge	$t0, $t3, cntDrawIf
+	bgeu	$t0, $t3, endEnd
 	li	$t3, 8
 	sll	$t3, $t3, 26
-	bge	$t1, $t3, cntDrawIf
+	bgeu	$t1, $t3, cntDrawIf
 	
 	# $t0 and $t1 are now num of pixels relative to (0, 0)
 	multu	$t0, $t6
 	mfhi	$t0
 	andi	$t3, $t0, 0x00040000
 	beqz	$t3, sroX
-#	addiu	$t0, $t0, 0x00080000
+	addiu	$t0, $t0, 0x00080000
 sroX:	srl	$t0, $t0, 19
 
 	multu	$t1, $t7
 	mfhi	$t1
 	andi	$t3, $t1, 0x00020000
 	beqz	$t3, sroY
-#	addiu	$t1, $t1, 0x00040000
+	addiu	$t1, $t1, 0x00040000
 sroY:	srl	$t1, $t1, 18
 	
 	# $t0 - num of bytes from (0, 0) - width
@@ -300,6 +300,8 @@ cntDrawIf:
 
 
 # TODO: comments and whitespaces
+
+endEnd:
 
 # Write pixel array
 	li	$v0, 15

@@ -56,5 +56,7 @@ int main(int argc, char *argv[]){
 	outputbmp.write(bmpptr, size);
 	outputbmp.close();
 
+	delete[] bmpptr;
+
 	return 0;
 }

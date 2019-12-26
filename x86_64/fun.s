@@ -5,8 +5,10 @@ gconst	dq 9.80665		; gravitational acceleration
 tstep	dq 0.0078125	; 1/128 s -- time step
 tau		dq 0.0625		; 1/16 s -- defines how long the ball is touching ground during bounce
 
-;msg		db "%lld", 9, "%lf", 9, "%lf", 9, "%lf", 9, "%lf", 10, 0
-;msg2	db "%lld", 9, "%lld", 9, "%lld", 9, "%lld", 10, 0
+colorR	db 0x19
+colorG	db 0x76
+colorB	db 0xd2
+
 msg		db "%lld", 9, "%lf", 9, "%lf", 10, 0
 
 section .text
@@ -47,8 +49,53 @@ fun:
 	mov r14, 1			; freefall
 	mov r15, 0			; loop counter
 
-	sub rsp, 128
+	mov rax, 64
+	cvtsi2sd xmm0, rax
+	cvtsi2sd xmm1, r12		; divide width by 64 (scale)
+	divsd xmm1, xmm0		; width ppm (pixels per meter)
+
+	mov rax, 8
+	cvtsi2sd xmm0, rax
+	cvtsi2sd xmm2, r13		; divide height by 8 (scale)
+	divsd xmm2, xmm0		; height ppm
+
+	sub rsp, 160
 mainloop:				; do{
+	mov rax, 64
+	cvtsi2sd xmm0, rax
+	comisd xmm0, xmm11
+	jbe end					; exit loop if s >= 64
+
+	mov rax, 8
+	cvtsi2sd xmm0, rax
+	comisd xmm0, xmm12
+	jbe skipDrawing			; skip drawing if h >= 8
+
+	mov r8, r10				; pixel to color (base address)
+
+	movsd xmm0, xmm11
+	mulsd xmm0, xmm1		; get pixel offset (width) --> ppm * s
+	roundsd xmm0, xmm0, 0
+	cvtsd2si rax, xmm0		; round and convert to integer
+	mov rcx, 3
+	mul rcx					; get byte offset --> pixel offset * 3 bytes
+	add r8, rax				; add byte offset to base address
+
+	movsd xmm0, xmm12
+	mulsd xmm0, xmm2		; get pixel offset (height) --> ppm * h
+	roundsd xmm0, xmm0, 0
+	cvtsd2si rax, xmm0		; round and convert to integer
+	mul r11					; get byte offset --> pixel offset * bytes per row
+	add r8, rax				; add byte offset to (base address + width offset)
+
+	mov al, [colorB]
+	mov [r8], al
+	mov al, [colorG]
+	mov [1+r8], al
+	mov al, [colorR]
+	mov [2+r8], al
+
+skipDrawing:
 	movdqa [rbp-16], xmm8
 	movdqa [rbp-32], xmm9
 	movdqa [rbp-48], xmm10
@@ -57,13 +104,13 @@ mainloop:				; do{
 	movdqa [rbp-96], xmm13
 	movdqa [rbp-112], xmm14
 	movdqa [rbp-128], xmm15
+	movdqa [rbp-144], xmm1
+	movdqa [rbp-160], xmm2
 	push r10
 	push r11
 
 	movsd xmm0, xmm11
 	movsd xmm1, xmm12
-	;movsd xmm2, xmm14
-	;movsd xmm3, xmm13
 	mov rsi, r15
 	mov rax, 2
 	mov rdi, msg
@@ -79,6 +126,8 @@ mainloop:				; do{
 	movdqa xmm13, [rbp-96]
 	movdqa xmm14, [rbp-112]
 	movdqa xmm15, [rbp-128]
+	movdqa xmm1, [rbp-144]
+	movdqa xmm2, [rbp-160]
 
 	cmp r14, 0
 	jz nofreefall			; if(freefall){
@@ -93,10 +142,10 @@ mainloop:				; do{
 	mulsd xmm5, xmm9			; K*dt
 	movsd xmm4, xmm14
 	mulsd xmm4, xmm4
-	mulsd xmm4, xmm5			; vxt = rho*vx*vx*dt;
+	mulsd xmm4, xmm5			; vxt = K*vx*vx*dt;
 	movsd xmm3, xmm13
 	mulsd xmm3, xmm3
-	mulsd xmm3, xmm5			; vyt = rho*vy*vy*dt;
+	mulsd xmm3, xmm5			; vyt = K*vy*vy*dt;
 	addsd xmm12, xmm6			; h = h+x;
 	subsd xmm14, xmm4			; vx = vx-vxt;
 	subsd xmm13, xmm7			; vy = vy-y;
@@ -127,7 +176,7 @@ whilecond:					; }
 	inc r15					; ++i;
 	cmp r15, 2048
 	jnz mainloop		; } while(i < 1024);
-
+end:
 	mov rsp, rbp
 	pop rbp
 	ret

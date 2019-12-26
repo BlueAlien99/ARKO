@@ -6,6 +6,7 @@ tstep	dq 0.0078125	; 1/128 s -- time step
 tau		dq 0.0625		; 1/16 s -- defines how long the ball is touching ground during bounce
 
 ;msg		db "%lld", 9, "%lf", 9, "%lf", 9, "%lf", 9, "%lf", 10, 0
+;msg2	db "%lld", 9, "%lld", 9, "%lld", 9, "%lld", 10, 0
 msg		db "%lld", 9, "%lf", 9, "%lf", 10, 0
 
 section .text
@@ -14,6 +15,26 @@ global fun
 fun:
 	push rbp
 	mov rbp, rsp
+
+	mov r10, rdi		; pointer to pixels
+	mov r11, rcx		; bytes per row
+	mov r12, rsi		; width
+	mov r13, rdx		; height
+
+	mov rax, r12
+	shr rax, 4			; get 1/16 of width
+	sub r12, rax
+	sub r12, 1			; width = (1/16)*width - 1 --> width of graphing area
+	mov rcx, 3
+	mul rcx				; each pixel has 3 bytes
+	add r10, rax		; move ptr to pixels from (0,0) to (x,0)
+
+	mov rax, r13
+	shr rax, 4			; get 1/16 of width
+	sub r13, rax
+	sub r13, 1			; height = (1/16)*height - 1 --> height of graphing area
+	mul r11				; each horizontal line of pixels has r11 bytes
+	add r10, rax		; move ptr to pixels from (x,0) to (x,y)
 
 	movsd xmm8, [gconst]
 	movsd xmm9, [tstep]
@@ -36,6 +57,8 @@ mainloop:				; do{
 	movdqa [rbp-96], xmm13
 	movdqa [rbp-112], xmm14
 	movdqa [rbp-128], xmm15
+	push r10
+	push r11
 
 	movsd xmm0, xmm11
 	movsd xmm1, xmm12
@@ -46,6 +69,8 @@ mainloop:				; do{
 	mov rdi, msg
 	call printf				; cout<<i<<'\t'<<s<<'\t'<<h<<'\n';
 
+	pop r11
+	pop r10
 	movdqa xmm8, [rbp-16]
 	movdqa xmm9, [rbp-32]
 	movdqa xmm10, [rbp-48]

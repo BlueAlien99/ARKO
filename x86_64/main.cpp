@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
 	cout<<"Height: "<<setw(4)<<height<<endl;
 	cout<<"Bytes per row: "<<setw(4)<<bytesPerRow<<endl;
 
-	fun(bmpptr+54, width, height, 16, 32, 0.1);
+	fun(bmpptr+54, width, height, bytesPerRow, 16, 32, 0.1);
 
 	ofstream outputbmp("./output.bmp", ios::out | ios::binary | ios::trunc);
 	if(!outputbmp.is_open()){

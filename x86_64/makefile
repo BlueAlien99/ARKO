@@ -1,12 +1,12 @@
 CC = gcc -std=c++11 -no-pie -g
 CFLAGS = -Wall -pedantic -Wextra -m64
-#INC := -lstdc++ -Iinclude/
+INC := -lstdc++ -Iinclude/
 
 all: main.o fun.o
-	$(CC) $(CFLAGS) main.o fun.o -o Run
+	$(CC) $(CFLAGS) main.o fun.o -o Run $(INC)
 
 main.o: main.cpp
-	$(CC) $(CFLAGS) -c main.cpp -o main.o
+	$(CC) $(CFLAGS) -c main.cpp -o main.o $(INC)
 
 fun.o: fun.s
 	nasm -F dwarf -f elf64 fun.s -o fun.o

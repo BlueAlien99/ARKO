@@ -1,10 +1,21 @@
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <stdio.h>
 
 #include "fun.h"
 
 using namespace std;
+
+int get4bytes(char *dataptr){
+	int ret = 0;
+	for(int i = 0; i < 4; ++i){
+		ret *= 256;
+		ret += *(unsigned char*)dataptr;
+		dataptr -= 1;
+	}
+	return ret;
+}
 
 int main(int argc, char *argv[]){
 	ifstream inputbmp("./bitmap.bmp", ios::in | ios::binary);
@@ -26,7 +37,15 @@ int main(int argc, char *argv[]){
 	inputbmp.read(bmpptr, size);
 	inputbmp.close();
 
-	fun(NULL, 0, 0, 16, 32, 0.1);
+	int width = get4bytes(bmpptr+21);
+	int height = get4bytes(bmpptr+25);
+	int bytesPerRow = ((int)size-54) / height;
+
+	cout<<"Width:  "<<setw(4)<<width<<endl;
+	cout<<"Height: "<<setw(4)<<height<<endl;
+	cout<<"Bytes per row: "<<setw(4)<<bytesPerRow<<endl;
+
+	fun(bmpptr+54, width, height, 16, 32, 0.1);
 
 	ofstream outputbmp("./output.bmp", ios::out | ios::binary | ios::trunc);
 	if(!outputbmp.is_open()){

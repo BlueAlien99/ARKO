@@ -1,7 +1,9 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_memfile.h>
@@ -89,41 +91,27 @@ int main(){
 	memcpy(bmpptr, plainbmpptr, size);
 
 	int i = 1;
+	double K = 0.1;
+	bool draw = true;
+
 	while(true){
-		bitmap_file = al_open_memfile(bmpptr, size, "r");
-		bitmap = al_load_bitmap_f(bitmap_file, ".bmp");
-		if(bitmap == NULL){
-			cout<<"Failed to load bitmap!"<<endl;
-			al_destroy_display(display);
-			al_destroy_event_queue(event_queue);
-			return -1;
+
+		if(draw){
+
+			bitmap_file = al_open_memfile(bmpptr, size, "r");
+			bitmap = al_load_bitmap_f(bitmap_file, ".bmp");
+			if(bitmap == NULL){
+				cout<<"Failed to load bitmap!"<<endl;
+				al_destroy_display(display);
+				al_destroy_event_queue(event_queue);
+				return -1;
+			}
+
+			al_draw_bitmap(bitmap, 0, 0, 0);
+			al_flip_display();
+			draw = false;
+			++i;
 		}
-
-		al_draw_bitmap(bitmap, 0, 0, 0);
-		al_flip_display();
-
-		ALLEGRO_EVENT ev;
-		al_wait_for_event(event_queue, &ev);
-
-
-
-
-		memcpy(bmpptr, plainbmpptr, size);
-
-		fun(bmpptr+54, width, height, bytesPerRow, 16, i, 0.1);
-
-		bitmap_file = al_open_memfile(bmpptr, size, "r");
-
-		bitmap = al_load_bitmap_f(bitmap_file, ".bmp");
-		if(bitmap == NULL){
-			cout<<"Failed to load bitmap!"<<endl;
-			al_destroy_display(display);
-			return -1;
-		}
-
-		al_draw_bitmap(bitmap, 0, 0, 0);
-
-		al_flip_display();
 
 		ALLEGRO_EVENT ev;
 		al_wait_for_event(event_queue, &ev);
@@ -131,13 +119,39 @@ int main(){
 		if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
 			break;
 		}
-		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
-			cout<<"mouse btn down"<<endl;
+		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 1){
+			cout<<"mouse btn LEFT down at "<<endl;
+			cout<<"x: "<<ev.mouse.x<<endl;
+			cout<<"y: "<<ev.mouse.y<<endl;
+			draw = true;
+		}
+		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 3){
+			string newK;
+			cout<<"Current K value = "<<K<<endl;
+			cout<<"Enter new K value: ";
+			cin>>newK;
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
+			try{
+				K = stod(newK);
+				cout<<"New K value = "<<K<<endl;
+				draw = true;
+			} catch(...){
+				cout<<"Couldn't change K value!"<<endl;
+			}
 		}
 
 
-		al_destroy_bitmap(bitmap);
-		al_fclose(bitmap_file);
+		if(draw){
+
+			memcpy(bmpptr, plainbmpptr, size);
+
+			fun(bmpptr+54, width, height, bytesPerRow, 16, 32, K);
+
+			al_destroy_bitmap(bitmap);
+			al_fclose(bitmap_file);
+		}
+
+
 	}
 
 	al_destroy_bitmap(bitmap);

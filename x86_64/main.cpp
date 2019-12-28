@@ -70,7 +70,7 @@ int main(){
 
 	cout<<"Width:  "<<setw(4)<<width<<endl;
 	cout<<"Height: "<<setw(4)<<height<<endl;
-	cout<<"Bytes per row: "<<setw(4)<<bytesPerRow<<endl;
+	cout<<"Bytes per row: "<<setw(4)<<bytesPerRow<<endl<<endl;
 
 	display = al_create_display(width, height);
 	if(!display){
@@ -90,14 +90,14 @@ int main(){
 
 	memcpy(bmpptr, plainbmpptr, size);
 
-	int i = 1;
+	int mx = 0;
+	int my = 0;
 	double K = 0.1;
 	bool draw = true;
 
 	while(true){
 
 		if(draw){
-
 			bitmap_file = al_open_memfile(bmpptr, size, "r");
 			bitmap = al_load_bitmap_f(bitmap_file, ".bmp");
 			if(bitmap == NULL){
@@ -110,7 +110,8 @@ int main(){
 			al_draw_bitmap(bitmap, 0, 0, 0);
 			al_flip_display();
 			draw = false;
-			++i;
+
+			cout<<"DONE!"<<endl<<endl;
 		}
 
 		ALLEGRO_EVENT ev;
@@ -120,9 +121,10 @@ int main(){
 			break;
 		}
 		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 1){
-			cout<<"mouse btn LEFT down at "<<endl;
-			cout<<"x: "<<ev.mouse.x<<endl;
-			cout<<"y: "<<ev.mouse.y<<endl;
+			mx = ev.mouse.x;
+			my = ev.mouse.y;
+			cout<<"x = "<<mx<<endl;
+			cout<<"y = "<<my<<endl<<endl;
 			draw = true;
 		}
 		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 3){
@@ -133,25 +135,22 @@ int main(){
 			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 			try{
 				K = stod(newK);
-				cout<<"New K value = "<<K<<endl;
+				cout<<"New K value = "<<K<<endl<<endl;
 				draw = true;
 			} catch(...){
-				cout<<"Couldn't change K value!"<<endl;
+				cout<<"Couldn't change K value!"<<endl<<endl;
 			}
 		}
 
-
 		if(draw){
+			cout<<"Rendering... ";
 
 			memcpy(bmpptr, plainbmpptr, size);
-
-			fun(bmpptr+54, width, height, bytesPerRow, 16, 32, K);
+			fun(bmpptr+54, width, height, bytesPerRow, my, mx, K);
 
 			al_destroy_bitmap(bitmap);
 			al_fclose(bitmap_file);
 		}
-
-
 	}
 
 	al_destroy_bitmap(bitmap);

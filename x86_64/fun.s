@@ -2,7 +2,7 @@ extern printf
 
 section .data
 gconst	dq 9.80665		; gravitational acceleration
-tstep	dq 0.0078125	; 1/128 s -- time step
+tstep	dq 0.00390625	; 1/256 s -- time step
 tau		dq 0.0625		; 1/16 s -- defines how long the ball is touching ground during bounce
 
 colorR	db 0x19
@@ -10,6 +10,7 @@ colorG	db 0x76
 colorB	db 0xd2
 
 msg		db "%lld", 9, "%lf", 9, "%lf", 10, 0
+msg2	db "x = %lld -> vx = %lf", 10, "y = %lld -> vy = %lf", 10, 10, 0
 
 section .text
 global fun
@@ -23,8 +24,12 @@ fun:
 	mov r12, rsi		; width
 	mov r13, rdx		; height
 
+	; r8 - mouse y
+	; r9 - mouse x
+
 	mov rax, r12
 	shr rax, 4			; get 1/16 of width
+	sub r9, rax			; mouse x relative to x = 0
 	sub r12, rax
 	sub r12, 1			; width = (1/16)*width - 1 --> width of graphing area
 	mov rcx, 3
@@ -32,20 +37,72 @@ fun:
 	add r10, rax		; move ptr to pixels from (0,0) to (x,0)
 
 	mov rax, r13
-	shr rax, 4			; get 1/16 of width
+	shr rax, 4			; get 1/16 of height
+	mov r15, r13
+	sub r15, r8
+	mov r8, r15
+	sub r8, rax			; mouse y relative to y = 0
 	sub r13, rax
 	sub r13, 1			; height = (1/16)*height - 1 --> height of graphing area
 	mul r11				; each horizontal line of pixels has r11 bytes
 	add r10, rax		; move ptr to pixels from (x,0) to (x,y)
+
+	cmp r8, 0			; check if mouse y was outside graphing area
+	jg posmy
+	mov r8, 0
+posmy:
+	mov r14, r13
+	shr r14, 1			; max vy is in the middle of graphing area
+	cmp r8, r14			; check if mouse y was greater than max vy
+	jl nofmy
+	mov r8, r14
+nofmy:
+
+	cmp r9, 0			; check if mouse x was outside graphing area
+	jg posmx
+	mov r9, 0
+posmx:
+	mov r15, r12
+	shr r15, 1			; max vx is in the middle of graphing area
+	cmp r9, r15			; check if mouse x was greater than max vx
+	jl nofmx
+	mov r9, r15
+nofmx:
+
+	mov rax, 64				; max vy = 64
+	cvtsi2sd xmm13, rax
+	cvtsi2sd xmm8, r14
+	divsd xmm13, xmm8		; get vy per pixel (linear scale)
+	cvtsi2sd xmm8, r8
+	mulsd xmm13, xmm8		; vpp * pixels = vy
+
+	mov rax, 128			; max vx = 128
+	cvtsi2sd xmm14, rax
+	cvtsi2sd xmm8, r15
+	divsd xmm14, xmm8		; get vx per pixel (linear scale)
+	cvtsi2sd xmm8, r9
+	mulsd xmm14, xmm8		; vpp * pixels = vx
+
+
+
+	movsd xmm0, xmm14
+	movsd xmm1, xmm13
+	mov rsi, r9
+	mov rdx, r8
+	mov rax, 2
+	mov rdi, msg2
+	call printf				; print info about calculated velocity
+
+
 
 	movsd xmm8, [gconst]
 	movsd xmm9, [tstep]
 	movsd xmm10, [tau]
 	xorps xmm11, xmm11		; s = 0
 	xorps xmm12, xmm12		; h = 0
-	movsd xmm13, xmm0		; vy
-	movsd xmm14, xmm1		; vx
-	movsd xmm15, xmm2		; K
+							; vy -> xmm13
+							; vx -> xmm14
+	movsd xmm15, xmm0		; K
 	mov r14, 1			; freefall
 	mov r15, 0			; loop counter
 
@@ -175,7 +232,7 @@ nofreefall:					; else{
 	mov r14, 1					; freefall = true;
 whilecond:					; }
 	inc r15					; ++i;
-	cmp r15, 2048
+	cmp r15, 4096
 	jnz mainloop		; } while(i < 1024);
 end:
 	mov rsp, rbp

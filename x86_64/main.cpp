@@ -44,7 +44,7 @@ int main(){
 		return -1;
 	}
 
-	ifstream inputbmp("./bitmap.bmp", ios::in | ios::binary);
+	ifstream inputbmp("./bitmap_x86.bmp", ios::in | ios::binary);
 	if(!inputbmp.is_open()){
 		cout<<"Couldn't open input bitmap!"<<endl;
 		return -1;
@@ -143,7 +143,7 @@ int main(){
 		}
 
 		if(draw){
-			cout<<"Rendering... ";
+			cout<<"Rendering... "<<endl<<endl;
 
 			memcpy(bmpptr, plainbmpptr, size);
 			fun(bmpptr+54, width, height, bytesPerRow, my, mx, K);

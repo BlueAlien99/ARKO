@@ -96,6 +96,7 @@ mainloop:				; do{
 	mov [2+r8], al
 
 skipDrawing:
+	jmp skipPrintf
 	movdqa [rbp-16], xmm8
 	movdqa [rbp-32], xmm9
 	movdqa [rbp-48], xmm10
@@ -128,7 +129,7 @@ skipDrawing:
 	movdqa xmm15, [rbp-128]
 	movdqa xmm1, [rbp-144]
 	movdqa xmm2, [rbp-160]
-
+skipPrintf:
 	cmp r14, 0
 	jz nofreefall			; if(freefall){
 	movsd xmm0, xmm14

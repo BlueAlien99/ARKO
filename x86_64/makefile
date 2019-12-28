@@ -1,6 +1,6 @@
 CC = gcc -std=c++11 -no-pie -g
 CFLAGS = -Wall -pedantic -Wextra -m64
-INC := -lstdc++ -Iinclude/
+INC := -lstdc++ -Iinclude/ -lallegro -lallegro_memfile -lallegro_image
 
 all: main.o fun.o
 	$(CC) $(CFLAGS) main.o fun.o -o Run $(INC)

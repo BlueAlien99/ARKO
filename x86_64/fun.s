@@ -2,7 +2,7 @@ extern printf
 
 section .data
 gconst	dq 9.80665		; gravitational acceleration
-tstep	dq 0.00390625	; 1/256 s -- time step
+tstep	dq 0.001953125	; 1/512 s -- time step
 tau		dq 0.0625		; 1/16 s -- defines how long the ball is touching ground during bounce
 
 colorR	db 0x19
@@ -83,7 +83,16 @@ nofmx:
 	cvtsi2sd xmm8, r9
 	mulsd xmm14, xmm8		; vpp * pixels = vx
 
+	movsd xmm15, xmm0		; K
 
+	sub rsp, 48
+	movdqa [rbp-16], xmm13
+	movdqa [rbp-32], xmm14
+	movdqa [rbp-48], xmm15
+	push r10
+	push r11
+	push r12
+	push r13
 
 	movsd xmm0, xmm14
 	movsd xmm1, xmm13
@@ -93,7 +102,14 @@ nofmx:
 	mov rdi, msg2
 	call printf				; print info about calculated velocity
 
-
+	pop r13
+	pop r12
+	pop r11
+	pop r10
+	movdqa xmm13, [rbp-16]
+	movdqa xmm14, [rbp-32]
+	movdqa xmm15, [rbp-48]
+	add rsp, 48
 
 	movsd xmm8, [gconst]
 	movsd xmm9, [tstep]
@@ -102,7 +118,7 @@ nofmx:
 	xorps xmm12, xmm12		; h = 0
 							; vy -> xmm13
 							; vx -> xmm14
-	movsd xmm15, xmm0		; K
+							; K  -> xmm15
 	mov r14, 1			; freefall
 	mov r15, 0			; loop counter
 
@@ -232,7 +248,7 @@ nofreefall:					; else{
 	mov r14, 1					; freefall = true;
 whilecond:					; }
 	inc r15					; ++i;
-	cmp r15, 4096
+	cmp r15, 16384
 	jnz mainloop		; } while(i < 1024);
 end:
 	mov rsp, rbp

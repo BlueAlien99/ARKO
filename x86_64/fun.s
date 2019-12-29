@@ -111,6 +111,11 @@ nofmx:
 	movdqa xmm15, [rbp-48]
 	add rsp, 48
 
+	mov rax, -1
+	cvtsi2sd xmm0, rax
+	movsd xmm5, xmm13
+	mulsd xmm5, xmm0		; initvy = -vy
+
 	movsd xmm8, [gconst]
 	movsd xmm9, [tstep]
 	movsd xmm10, [tau]
@@ -132,7 +137,7 @@ nofmx:
 	cvtsi2sd xmm2, r13		; divide height by 8 (scale)
 	divsd xmm2, xmm0		; height ppm
 
-	sub rsp, 160
+	sub rsp, 176
 mainloop:				; do{
 	mov rax, 64
 	cvtsi2sd xmm0, rax
@@ -180,6 +185,7 @@ skipDrawing:
 	movdqa [rbp-128], xmm15
 	movdqa [rbp-144], xmm1
 	movdqa [rbp-160], xmm2
+	movdqa [rbp-176], xmm5
 	push r10
 	push r11
 
@@ -202,6 +208,7 @@ skipDrawing:
 	movdqa xmm15, [rbp-128]
 	movdqa xmm1, [rbp-144]
 	movdqa xmm2, [rbp-160]
+	movdqa xmm5, [rbp-176]
 skipPrintf:
 	cmp r14, 0
 	jz nofreefall			; if(freefall){
@@ -212,15 +219,15 @@ skipPrintf:
 	mulsd xmm7, xmm9			; y = g*dt
 	movsd xmm6, xmm13
 	mulsd xmm6, xmm9			; x = vy*dt;
-	movsd xmm5, xmm15
-	mulsd xmm5, xmm9			; K*dt
+	addsd xmm12, xmm6			; h = h+x;
+	movsd xmm6, xmm15
+	mulsd xmm6, xmm9			; K*dt
 	movsd xmm4, xmm14
 	mulsd xmm4, xmm4
-	mulsd xmm4, xmm5			; vxt = K*vx*vx*dt;
+	mulsd xmm4, xmm6			; vxt = K*vx*vx*dt;
 	movsd xmm3, xmm13
 	mulsd xmm3, xmm3
-	mulsd xmm3, xmm5			; vyt = K*vy*vy*dt;
-	addsd xmm12, xmm6			; h = h+x;
+	mulsd xmm3, xmm6			; vyt = K*vy*vy*dt;
 	subsd xmm14, xmm4			; vx = vx-vxt;
 	xorps xmm0, xmm0
 	comisd xmm0, xmm12
@@ -235,6 +242,11 @@ posvy:								; else{
 	subsd xmm13, xmm3					; vy = vy-vyt;
 	jmp whilecond					; }
 negh:							; else{
+	movsd xmm0, xmm13
+	comisd xmm0, xmm5
+	ja okvy							; if(vy < initvy){
+	movsd xmm13, xmm5					; vy = initvy;
+okvy:								; }
 	mov r14, 0						; freefall = 0;
 	xorps xmm12, xmm12				; h = 0;
 								; }

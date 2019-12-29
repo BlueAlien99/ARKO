@@ -17,7 +17,7 @@ int main(){
 
 	double initvy = -vy;
 	double g = 9.81;
-	double dt = 0.0078125;	// 1/128 s
+	double dt = 0.001953125;	// 1/512 s
 	double s = 0;
 	double h = 0;
 	double tau = 0.0625;	// 1/16 s
@@ -26,7 +26,7 @@ int main(){
 
 	ofstream outfile("data.txt");
 
-	while(i < 2048){
+	while(i < 16384){
 		++i;
 		//outfile<<s<<" "<<h<<'\t'<<vx<<" "<<vy<<endl;
 		outfile<<s<<" "<<h<<endl;

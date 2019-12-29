@@ -127,7 +127,8 @@ int main(){
 			cout<<"y = "<<my<<endl<<endl;
 			draw = true;
 		}
-		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 3){
+		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN &&
+				(ev.mouse.button == 2 || ev.mouse.button == 3)){
 			string newK;
 			cout<<"Current K value = "<<K<<endl;
 			cout<<"Enter new K value: ";
@@ -140,6 +141,7 @@ int main(){
 			} catch(...){
 				cout<<"Couldn't change K value!"<<endl<<endl;
 			}
+			al_flush_event_queue(event_queue);
 		}
 
 		if(draw){

@@ -136,6 +136,10 @@ int main(){
 			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 			try{
 				K = stod(newK);
+				if(K > 3){
+					K = 3;
+					cout<<"Do you really want a segfault?"<<endl;
+				}
 				cout<<"New K value = "<<K<<endl<<endl;
 				draw = true;
 			} catch(...){

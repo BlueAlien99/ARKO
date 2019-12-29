@@ -1,3 +1,4 @@
 - change K with RMB
 - edge case: ball accelerates in y axis
-
+- valgrind: possibly lost
+- different size of bmp

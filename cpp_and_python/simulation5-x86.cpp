@@ -15,13 +15,12 @@ int main(){
 	cout<<"\nrho: ";
 	cin>>rho;
 
+	double initvy = -vy;
 	double g = 9.81;
 	double dt = 0.0078125;	// 1/128 s
 	double s = 0;
 	double h = 0;
-	//double hmax = pow(vy, 2)/(2*g);
 	double tau = 0.0625;	// 1/16 s
-	//double hstop = 0.03;
 	bool freefall = true;
 	int i = 0;
 
@@ -29,6 +28,7 @@ int main(){
 
 	while(i < 2048){
 		++i;
+		//outfile<<s<<" "<<h<<'\t'<<vx<<" "<<vy<<endl;
 		outfile<<s<<" "<<h<<endl;
 		if(freefall){
 			s = s + vx*dt;
@@ -38,12 +38,17 @@ int main(){
 			double vyt = rho*vy*vy*dt;
 			h = h+x;
 			vx = vx-vxt;
-			if(vy < 0){
-				vy = vy-y+vyt;
-			} else{
-				vy = vy-y-vyt;
+			if(h > 0){
+				if(vy < 0){
+					vy = vy-y+vyt;
+				} else{
+					vy = vy-y-vyt;
+				}
 			}
-			if(h <= 0){
+			else{
+				if(vy < initvy){
+					vy = initvy;
+				}
 				freefall = 0;
 				h = 0;
 			}
@@ -52,7 +57,6 @@ int main(){
 			s = s + vx*tau;
 			vy = vy * (-1);
 			freefall = true;
-			//hmax = pow(vmax, 2)/(2*g);
 		}
 	}
 

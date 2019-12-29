@@ -10,7 +10,7 @@ colorG	db 0x76
 colorB	db 0xd2
 
 msg		db "%lld", 9, "%lf", 9, "%lf", 10, 0
-msg2	db "x = %lld -> vx = %lf", 10, "y = %lld -> vy = %lf", 10, 10, 0
+msg2	db "x = %lld -> vx = %.2lf", 10, "y = %lld -> vy = %.2lf", 10, 10, 0
 
 section .text
 global fun
@@ -222,18 +222,19 @@ skipPrintf:
 	mulsd xmm3, xmm5			; vyt = K*vy*vy*dt;
 	addsd xmm12, xmm6			; h = h+x;
 	subsd xmm14, xmm4			; vx = vx-vxt;
-	subsd xmm13, xmm7			; vy = vy-y;
-	xorps xmm0, xmm0
-	comisd xmm0, xmm13
-	jb posvy					; if(vy <= 0){
-	addsd xmm13, xmm3				; vy = vy+vyt;
-	jmp negh					; }
-posvy:							; else{
-	subsd xmm13, xmm3				; vy = vy-vyt;
-negh:							; }
 	xorps xmm0, xmm0
 	comisd xmm0, xmm12
-	jb whilecond				; if(h <= 0){
+	jae negh					; if(h > 0){
+	subsd xmm13, xmm7				; vy = vy-y;
+	xorps xmm0, xmm0
+	comisd xmm0, xmm13
+	jb posvy						; if(vy <= 0){
+	addsd xmm13, xmm3					; vy = vy+vyt;
+	jmp whilecond					; }
+posvy:								; else{
+	subsd xmm13, xmm3					; vy = vy-vyt;
+	jmp whilecond					; }
+negh:							; else{
 	mov r14, 0						; freefall = 0;
 	xorps xmm12, xmm12				; h = 0;
 								; }
